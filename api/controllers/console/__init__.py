@@ -57,3 +57,6 @@ from .tag import tags
 
 # Import workspace controllers
 from .workspace import account, load_balancing_config, members, model_providers, models, tool_providers, workspace
+
+# Import molecular docking controllers
+from .molecular_docking import file, task

@@ -37,6 +37,28 @@ class Account(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"))
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"))
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "avatar": self.avatar,
+            "interface_language": self.interface_language,
+            "interface_theme": self.interface_theme,
+            "timezone": self.timezone,
+            "last_login_at": self.last_login_at,
+            "last_login_ip": self.last_login_ip,
+            "last_active_at": self.last_active_at,
+            "status": self.status,
+            "initialized_at": self.initialized_at,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
     @property
     def is_password_set(self):
         return self.password is not None

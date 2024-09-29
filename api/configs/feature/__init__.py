@@ -598,6 +598,13 @@ class PositionConfig(BaseSettings):
         return {item.strip() for item in self.POSITION_TOOL_EXCLUDES.split(",") if item.strip() != ""}
 
 
+class MolecularDockingConfig(BaseSettings):
+    MOLECULAR_DOCKING_API_URL: str = Field(
+        description="Molecular docking API URL",
+        default=None,
+    )
+
+
 class FeatureConfig(
     # place the configs in alphabet order
     AppExecutionConfig,
@@ -626,5 +633,6 @@ class FeatureConfig(
     # hosted services config
     HostedServiceConfig,
     CeleryBeatConfig,
+    MolecularDockingConfig,
 ):
     pass

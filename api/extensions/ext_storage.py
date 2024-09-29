@@ -1,5 +1,8 @@
+import io
 import logging
+import os
 from collections.abc import Generator
+from io import BufferedReader
 from typing import Union
 
 from flask import Flask
@@ -56,6 +59,13 @@ class Storage:
         except Exception as e:
             logging.exception("Failed to load file: %s", e)
             raise e
+
+    def load_buffer(self, filename: str) -> BufferedReader:
+        file_bytes = self.storage_runner.load_once(filename)
+        byte_io = io.BytesIO(file_bytes)
+        byte_io.name = os.path.basename(filename)
+        buffered_reader = io.BufferedReader(byte_io)
+        return buffered_reader
 
     def load_once(self, filename: str) -> bytes:
         try:
