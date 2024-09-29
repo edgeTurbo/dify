@@ -17,7 +17,7 @@ import time
 import warnings
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask, Response, request
+from flask import Flask, Response, request, render_template
 from flask_cors import CORS
 from werkzeug.exceptions import Unauthorized
 
@@ -305,6 +305,24 @@ def pool_stat():
         "recycle_time": db.engine.pool._recycle,
     }
 
+from configs.websocket_config.websocket_handler import WebSocketHandler  # Import WebSocket handler
+from configs.websocket_config.websocket_handler import send_message_to_user
+from flask_socketio import SocketIO, emit
+socketio = SocketIO(app)
+
+
+
+@app.route('/')
+def index():
+    """
+    Render the index page.
+    该接口是给websocket测试用的
+    """
+    return render_template("index.html")
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+    websocket_handler = WebSocketHandler(socketio)
+    # Register WebSocket event handlers
+    socketio.run(app, host='0.0.0.0', port=5001, debug=False, use_reloader=False, log_output=False)
+    # app.run(host="0.0.0.0", port=5001)

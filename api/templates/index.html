@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+
+ <div><button onclick="ws()">连接服务端</button></div>
+ <div><button onclick="clos_con()">断开连接</button></div>
+ <div><button onclick="send_msg()">发送消息给服务端</button></div>
+<script type="text/javascript">
+    windw_socket=null
+    function ws(){
+        namespace = '/websocket';
+        var websocket_url = location.protocol+'//' + document.domain + ':' + location.port + namespace;
+        console.log(websocket_url)
+        var socket=io.connect(websocket_url,{
+            extraHeaders: {
+                Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGE1MTA0ZWYtMzY5My00MzYxLWE4ZmItYWE0OTkxZWYwYTY2IiwiZXhwIjoxNzMwMDE1OTE1LCJpc3MiOiJTRUxGX0hPU1RFRCIsInN1YiI6IkNvbnNvbGUgQVBJIFBhc3Nwb3J0In0.gmTBnt5PZ7n5ITXeuwbtEsF1dfcJLuHeHJrW9NQ0uyk`  // 在 header 中添加 token
+            }
+        });
+        // socket.emit('connect2', {'param':'value'});	//发送消息
+        // socket.close()
+        socket.on('connect',function(data){
+            console.log('connecte:'+data);
+            alert("建立连接成功")
+            windw_socket=socket
+	});
+	socket.on('disconnect',function(data){
+		alert("连接已断开")
+		console.log('disconnecte:'+data);
+	});
+
+	socket.on('my_response_message',function(data){
+		console.log('my_response_message:'+data);
+
+        console.log(JSON.parse(data))
+
+		alert("收到服务端的回复:"+data)
+	});
+
+    socket.on('molecular_docking',function(data){
+		console.log('my_response_message:'+data);
+
+        console.log(JSON.parse(data))
+
+		console.log(JSON.parse(data)['status'])
+	});
+}
+    function clos_con(){
+	    if(windw_socket!=null){
+	        windw_socket.close()
+        }
+    }
+    window.onbeforeunload= function(event) {
+	if (windw_socket!=null && !windw_socket.closed){
+		// confirm(windw_socket.closed)
+		windw_socket.close()
+	}
+    }
+    window.onunload= function(event) {
+	if (windw_socket!=null && !windw_socket.closed){
+		//confirm(windw_socket.closed)
+		windw_socket.close()
+	}
+    }
+    function send_msg(){
+	    if(windw_socket!=null){
+	        windw_socket.emit('message', "这里是客户端");
+        }
+    }
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ from typing import Union, Tuple
 from celery import shared_task
 
 from configs import dify_config
+from configs.websocket_config import websocket_handler
 from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
@@ -14,6 +15,7 @@ from models.molecular_docking import MolecularDockingTask, Status
 import requests
 import logging
 import click
+import requests
 
 from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
 
@@ -68,8 +70,6 @@ class MolecularDockingService:
         )
         db.session.add(molecular_docking_task)
         db.session.commit()
-
-        # todo 使用websocket通知前端任务状态变化为正在处理中
 
         if start_celery:
             # 启动消息队列进行任务处理
@@ -150,6 +150,14 @@ class MolecularDockingService:
         db.session.commit()
 
         # todo 使用websocket通知前端任务状态变化为成功或失败
+        data = {
+            "user_id": user.id,
+            "message": json.dumps({
+                "task_id": molecular_docking_task.id,
+                "status": molecular_docking_task.status
+            }),
+        }
+        requests.post(f"http://127.0.0.1:5001/console/api/molecular-docking/send-websocket-message", data=data)
 
         return molecular_docking_task
 
@@ -210,6 +218,17 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
     MolecularDockingTask.query.filter_by(id=molecular_docking_task.id, created_by=user.id).update(
         {'status': Status.PROCESSING.status})
     db.session.commit()
+
+    data = {
+        "user_id": user.id,
+        "message": json.dumps({
+            "task_id": molecular_docking_task.id,
+            "status": molecular_docking_task.status
+        }),
+    }
+    requests.post(f"http://127.0.0.1:5001/console/api/molecular-docking/send-websocket-message", data=data)
+
+
     # 获取pdb和ligand文件buffer
     pdb_file_buffer = MolecularDockingService.get_upload_file_buffer(molecular_docking_task.pdb_file_id, user)
     ligand_file_buffer_list = MolecularDockingService.get_upload_file_buffer(
