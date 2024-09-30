@@ -72,23 +72,5 @@ class MolecularDockingCenterPositionApi(Resource):
         return center_position, 200
 
 
-class MolecularDockingTaskWebsocketApi(Resource):
-    """
-    用于响应消息队列任务状态变化的接口，通过websocket进行传递消息给前端
-    """
-    @setup_required
-    def post(self):
-        user_id = request.form.get("user_id")
-        message = request.form.get("message")
-        # 发送websocket消息通知前端任务状态变化
-        websocket_handler.send_message_to_user(
-            title="molecular_docking",
-            uid=user_id,
-            message=json.loads(message),
-        )
-        return True, 200
-
-
 api.add_resource(MolecularDockingTaskApi, "/molecular-docking/task")
 api.add_resource(MolecularDockingCenterPositionApi, "/molecular-docking/center-position")
-api.add_resource(MolecularDockingTaskWebsocketApi, "/molecular-docking/send-websocket-message")
