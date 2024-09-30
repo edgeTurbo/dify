@@ -27,32 +27,32 @@ class MolecularDockingTaskApi(Resource):
     @marshal_with(molecular_docking_task_fields)
     # @cloud_edition_billing_resource_check("documents")
     def post(self):
-        task_name = request.form.get("task_name") if request.form.get("task_name") else "molecular_docking_task_" + str(
+        data = request.get_json()
+        task_name = data["task_name"] if data["task_name"] else "molecular_docking_task_" + str(
             uuid.uuid4())
 
-        pdb_file_id = request.form.get("pdb_file_id")
+        pdb_file_id = data["pdb_file_id"]
 
-        center_x = float(request.form.get("center_x"))
-        center_y = float(request.form.get("center_y"))
-        center_z = float(request.form.get("center_z"))
+        center_x = float(data["center_x"])
+        center_y = float(data["center_y"])
+        center_z = float(data["center_z"])
 
-        size_x = float(request.form.get("size_x"))
-        size_y = float(request.form.get("size_y"))
-        size_z = float(request.form.get("size_z"))
+        size_x = float(data["size_x"])
+        size_y = float(data["size_y"])
+        size_z = float(data["size_z"])
 
-        ligand_file_ids = request.form.get("ligand_file_ids").split(",") if request.form.get(
-            "ligand_file_ids") else None
+        ligand_file_ids = data["ligand_file_ids"].split(",") if data[
+            "ligand_file_ids"] else None
 
         # 输出结果数目
-        out_pose_num = int(request.form.get("out_pose_num"))
+        out_pose_num = int(data["out_pose_num"])
 
         if pdb_file_id is None or center_x is None or center_y is None or center_z is None or size_x is None or size_y is None or size_z is None or ligand_file_ids is None or out_pose_num is None:
             raise IllegalParametersError()
 
         molecular_docking_task = MolecularDockingService.start_task(task_name, pdb_file_id, center_x, center_y,
                                                                     center_z, size_x, size_y, size_z, ligand_file_ids,
-                                                                    out_pose_num, current_user)
-
+                                                                    out_pose_num, current_user, start_celery=False)
         return molecular_docking_task, 201
 
 
