@@ -1,10 +1,12 @@
 import datetime
 import hashlib
+import io
 import uuid
 from collections.abc import Generator
 from typing import Union
 
 from flask_login import current_user
+from flask import send_file
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import NotFound
 
@@ -79,6 +81,14 @@ class MolecularDockingFileService:
         db.session.commit()
 
         return upload_file
+
+    @staticmethod
+    def get_file(file_id: str, mime_type: str) -> Generator:
+        upload_file = db.session.query(UploadFile).filter_by(id=file_id).first()
+        if upload_file is None:
+            raise NotFound("File not found")
+        return send_file(io.BytesIO(storage.load_once(upload_file.key)), mimetype=mime_type, as_attachment=True, download_name=upload_file.name)
+
 
     @staticmethod
     def upload_text(text: str, text_name: str) -> UploadFile:

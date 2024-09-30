@@ -15,10 +15,7 @@ from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required, cloud_edition_billing_resource_check
 from fields.file_fields import file_fields, upload_config_fields
 from libs.login import login_required
-from services.file_service import ALLOWED_EXTENSIONS, UNSTRUCTURED_ALLOWED_EXTENSIONS, FileService
 from services.molecular_docking_file_service import MolecularDockingFileService
-
-PREVIEW_WORDS_LIMIT = 3000
 
 
 class MolecularDockingFileApi(Resource):
@@ -61,16 +58,17 @@ class MolecularDockingFileApi(Resource):
         return upload_file, 201
 
 
-# class FilePreviewApi(Resource):
-#     @setup_required
-#     @login_required
-#     @account_initialization_required
-#     def get(self, file_id):
-#         file_id = str(file_id)
-#         text = FileService.get_file_preview(file_id)
-#         return {"content": text}
-#
-#
+class GetFileApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, file_id):
+        mime_type = request.args.get("mime_type", default="text/plain", type=str)
+        file_id = str(file_id)
+        file_stream = MolecularDockingFileService.get_file(file_id, mime_type)
+        return file_stream
+
+
 # class FileSupportTypeApi(Resource):
 #     @setup_required
 #     @login_required
@@ -82,5 +80,5 @@ class MolecularDockingFileApi(Resource):
 
 
 api.add_resource(MolecularDockingFileApi, "/molecular-docking/files/upload")
-# api.add_resource(FilePreviewApi, "/files/<uuid:file_id>/preview")
+api.add_resource(GetFileApi, "/molecular-docking/files/<uuid:file_id>")
 # api.add_resource(FileSupportTypeApi, "/files/support-type")
