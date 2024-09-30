@@ -65,7 +65,8 @@ class MolecularDockingCenterPositionApi(Resource):
     @login_required
     @account_initialization_required
     def post(self):
-        pdb_file_id = request.form.get("pdb_file_id")
+        data = request.get_json()
+        pdb_file_id = data["pdb_file_id"]
         if pdb_file_id is None:
             raise IllegalParametersError()
         center_position = MolecularDockingService.get_center_position(pdb_file_id, current_user)
