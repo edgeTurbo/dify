@@ -305,11 +305,11 @@ def pool_stat():
         "recycle_time": db.engine.pool._recycle,
     }
 
-from configs.websocket_config.websocket_handler import WebSocketHandler  # Import WebSocket handler
-from configs.websocket_config.websocket_handler import send_message_to_user
-from flask_socketio import SocketIO, emit
-socketio = SocketIO(app)
 
+from configs.websocket_config.websocket_handler import WebSocketHandler
+from flask_socketio import SocketIO
+
+socketio = SocketIO(app)
 
 
 @app.route('/')
@@ -324,5 +324,5 @@ def index():
 if __name__ == "__main__":
     websocket_handler = WebSocketHandler(socketio)
     # Register WebSocket event handlers
-    socketio.run(app, host='0.0.0.0', port=5001, debug=False, use_reloader=False, log_output=False)
+    socketio.run(app, host='0.0.0.0', port=5001, debug=True, use_reloader=True, log_output=True)
     # app.run(host="0.0.0.0", port=5001)

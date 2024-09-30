@@ -12,7 +12,7 @@ from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
 from models.molecular_docking import MolecularDockingTask, Status
-import requests
+from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
 import logging
 import click
 import requests
@@ -26,6 +26,13 @@ if dify_config.MOLECULAR_DOCKING_API_URL == "":
         click.style(
             "分子对接API URL不能为空, 请在配置文件.env中设置MOLECULAR_DOCKING_API_URL, 否则分子对接功能无法正常使用",
             fg='red', bold=True))
+
+if dify_config.INNER_API is None or dify_config.INNER_API_KEY is None:
+    logging.error(
+        click.style(
+            "内网API地址或API KEY未设置, 请在配置文件.env中设置INNER_API为true和INNER_API_KEY, 否则分子对接功能无法正常使用",
+            fg='red', bold=True)
+    )
 
 
 class MolecularDockingService:
@@ -149,15 +156,10 @@ class MolecularDockingService:
         molecular_docking_task.updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         db.session.commit()
 
-        # todo 使用websocket通知前端任务状态变化为成功或失败
-        data = {
-            "user_id": user.id,
-            "message": json.dumps({
-                "task_id": molecular_docking_task.id,
-                "status": molecular_docking_task.status
-            }),
-        }
-        requests.post(f"http://127.0.0.1:5001/console/api/molecular-docking/send-websocket-message", data=data)
+        calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
+            "task_id": molecular_docking_task.id,
+            "status": molecular_docking_task.status
+        })
 
         return molecular_docking_task
 
@@ -219,15 +221,10 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
         {'status': Status.PROCESSING.status})
     db.session.commit()
 
-    data = {
-        "user_id": user.id,
-        "message": json.dumps({
-            "task_id": molecular_docking_task.id,
-            "status": molecular_docking_task.status
-        }),
-    }
-    requests.post(f"http://127.0.0.1:5001/console/api/molecular-docking/send-websocket-message", data=data)
-
+    calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
+        "task_id": molecular_docking_task.id,
+        "status": molecular_docking_task.status
+    })
 
     # 获取pdb和ligand文件buffer
     pdb_file_buffer = MolecularDockingService.get_upload_file_buffer(molecular_docking_task.pdb_file_id, user)
