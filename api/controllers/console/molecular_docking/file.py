@@ -60,8 +60,6 @@ class MolecularDockingFileApi(Resource):
 
 class GetFileApi(Resource):
     @setup_required
-    @login_required
-    @account_initialization_required
     def get(self, file_id):
         mime_type = request.args.get("mime_type", default="text/plain", type=str)
         file_id = str(file_id)
