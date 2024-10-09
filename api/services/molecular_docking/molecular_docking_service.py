@@ -1,22 +1,22 @@
 import datetime
+import io
 import json
+import logging
+import os.path
 from io import BufferedReader
 from typing import Union, Tuple
 
+import click
+import requests
 from celery import shared_task
 
 from configs import dify_config
-from configs.websocket_config import websocket_handler
+from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
 from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
 from models.molecular_docking import MolecularDockingTask, Status
-from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
-import logging
-import click
-import requests
-
 from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
 
 ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
@@ -90,7 +90,7 @@ class MolecularDockingService:
             ligand_file_buffer_list = cls.get_upload_file_buffer(ligand_file_ids, user, return_list=True)
             return cls.main_processor(user, task_name, pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
                                       center_z,
-                                      size_x, size_y, size_z, out_pose_num, molecular_docking_task)
+                                      size_x, size_y, size_z, out_pose_num, molecular_docking_task, start_celery)
 
     @classmethod
     def get_center_position(cls, pdb_file_id: str, user: Union[Account, EndUser]) -> dict:
@@ -128,7 +128,7 @@ class MolecularDockingService:
     def main_processor(cls, user: Union[Account, EndUser], task_name: str, pdb_file_buffer: BufferedReader,
                        ligand_file_buffer_list: list[BufferedReader], center_x: float, center_y: float, center_z: float,
                        size_x: float, size_y: float, size_z: float, out_pose_num: int,
-                       molecular_docking_task: MolecularDockingTask) -> MolecularDockingTask:
+                       molecular_docking_task: MolecularDockingTask, start_celery: bool = True) -> MolecularDockingTask:
         # 调用DockingProcessorAPI进行docking
         try:
             logging.info(click.style(f"{user.name} 开始分子对接任务：{task_name}", fg='blue'))
@@ -156,10 +156,12 @@ class MolecularDockingService:
         molecular_docking_task.updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         db.session.commit()
 
-        calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
-            "task_id": molecular_docking_task.id,
-            "status": molecular_docking_task.status
-        })
+        if start_celery:
+            # 当启动消息队列的时候才进行发送websocket消息
+            calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
+                "task_id": molecular_docking_task.id,
+                "status": molecular_docking_task.status
+            })
 
         return molecular_docking_task
 
@@ -195,13 +197,76 @@ class MolecularDockingService:
             'ligand_file': ligand_file_buffer_list[0] if len(ligand_file_buffer_list) == 1 else None
         }
 
-        response = requests.post(dify_config.MOLECULAR_DOCKING_API_URL, files=files, data=docking_params)
+        response = requests.post(dify_config.MOLECULAR_DOCKING_API_URL, files=files, data=docking_params, timeout=120)
         result_data = response.json()
 
         if 'error' in result_data:
             return result_data['error'], False
 
         return result_data['output'], True
+
+
+    @classmethod
+    def start_task_for_custom_tool(cls, task_name: str, pdb_file_url: str, center_x: float, center_y: float, center_z: float,
+                   size_x: float, size_y: float, size_z: float, ligand_file_urls: list[str], out_pose_num: int,
+                   ) -> dict:
+        """
+        Start molecular docking task.
+        :param task_name: task name
+        :param pdb_file_url: pdb file url
+        :param center_x: center x
+        :param center_y: center y
+        :param center_z: center z
+        :param size_x: size x
+        :param size_y: size y
+        :param size_z: size z
+        :param ligand_file_urls: ligand file urls
+        :param out_pose_num: output pose number
+        :return: molecular docking task object
+        """
+        pdb_file_buffer = cls.download_file(pdb_file_url)
+        ligand_file_buffer_list: list[BufferedReader] = []
+        for ligand_file_url in ligand_file_urls:
+            ligand_file_buffer_list.append(cls.download_file(ligand_file_url))
+        return cls.main_processor_for_custom_tool(task_name, pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
+                                  center_z,
+                                  size_x, size_y, size_z, out_pose_num)
+
+    @classmethod
+    def main_processor_for_custom_tool(cls, task_name: str, pdb_file_buffer: BufferedReader,
+                       ligand_file_buffer_list: list[BufferedReader], center_x: float, center_y: float, center_z: float,
+                       size_x: float, size_y: float, size_z: float, out_pose_num: int,
+                    ) -> dict:
+        # 调用DockingProcessorAPI进行docking
+        try:
+            logging.info(click.style(f"自定义工具 开始分子对接任务：{task_name}", fg='blue'))
+            result, success_flag = cls.docking_processor(pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
+                                                         center_z,
+                                                         size_x, size_y,
+                                                         size_z, out_pose_num)
+            if success_flag:
+                logging.info(click.style(f"分子对接成功", fg='blue'))
+            else:
+                logging.info(click.style(f"分子对接失败", fg='red', bold=True))
+        except Exception as e:
+            logging.info(click.style(f"分子对接任务失败：{e}", fg='red', bold=True))
+            result = {"error": str(e)}
+
+        return result
+
+
+    @classmethod
+    def download_file(cls, file_url):
+        try:
+            response = requests.get(file_url)
+            byte_io = io.BytesIO(response.content)
+            byte_io.name = os.path.basename(os.path.basename(file_url))
+            buffered_reader = io.BufferedReader(byte_io)
+            return buffered_reader
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise ValueError("Download file from url failed: " + str(file_url))
 
 
 # acks_late 设置为 True 时，任务的消息确认（acknowledgement）会在任务执行完成后才发送，确保任务在失败或 worker 崩溃时能重新被执行。

@@ -5,8 +5,6 @@ from flask import request
 from flask_login import current_user
 from flask_restful import Resource, marshal_with
 
-import services
-from configs import dify_config
 from controllers.console import api
 from controllers.console.molecular_docking.error import (
     IllegalParametersError,
@@ -16,7 +14,6 @@ from controllers.console.wraps import account_initialization_required, cloud_edi
 from fields.molecular_docking_fields import molecular_docking_task_fields
 from libs.login import login_required
 from services.molecular_docking.molecular_docking_service import MolecularDockingService
-from configs.websocket_config import websocket_handler
 
 
 class MolecularDockingTaskApi(Resource):
@@ -73,5 +70,41 @@ class MolecularDockingCenterPositionApi(Resource):
         return center_position, 200
 
 
+class MolecularDockingTaskCustomToolsApi(Resource):
+    """
+    提供给工作流的自定义工具，分子对接任务接口
+    """
+    def post(self):
+        data = request.get_json()
+        task_name = data["task_name"] if data["task_name"] else "molecular_docking_task_" + str(
+            uuid.uuid4())
+
+        pdb_file_url = data["pdb_file_url"]
+
+        center_x = float(data["center_x"])
+        center_y = float(data["center_y"])
+        center_z = float(data["center_z"])
+
+        size_x = float(data["size_x"])
+        size_y = float(data["size_y"])
+        size_z = float(data["size_z"])
+
+        ligand_file_urls = data["ligand_file_urls"].split(",") if data[
+            "ligand_file_urls"] else None
+
+        # 输出结果数目
+        out_pose_num = int(data["out_pose_num"])
+
+        if pdb_file_url is None or center_x is None or center_y is None or center_z is None or size_x is None or size_y is None or size_z is None or ligand_file_urls is None or out_pose_num is None:
+            raise IllegalParametersError()
+
+        result = MolecularDockingService.start_task_for_custom_tool(task_name, pdb_file_url, center_x, center_y,
+                                                                    center_z, size_x, size_y, size_z, ligand_file_urls,
+                                                                    out_pose_num)
+        return result, 201
+
+
 api.add_resource(MolecularDockingTaskApi, "/molecular-docking/task")
 api.add_resource(MolecularDockingCenterPositionApi, "/molecular-docking/center-position")
+
+api.add_resource(MolecularDockingTaskCustomToolsApi, "/custom-tools/molecular-docking/task")
