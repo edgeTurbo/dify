@@ -73,9 +73,9 @@ class ToolCenterPositionService:
                     'center_z': info[2]
                 }
             return {
-                    'center_x': 0,
-                    'center_y': 0,
-                    'center_z': 0
+                    'center_x': '',
+                    'center_y': '',
+                    'center_z': ''
                 }
 
         elif method == 'specific':
@@ -93,9 +93,9 @@ class ToolCenterPositionService:
                     'center_z': info[2]
                 }
             return {
-                'center_x': 0,
-                'center_y': 0,
-                'center_z': 0
+                'center_x': '',
+                'center_y': '',
+                'center_z': ''
             }
         else:
             raise ValueError("Invalid method. Choose 'default' or 'specific'.")
