@@ -1,7 +1,8 @@
+import io
 import json
 import uuid
 
-from flask import request
+from flask import request, send_file
 from flask_login import current_user
 from flask_restful import Resource, marshal_with
 
@@ -70,6 +71,29 @@ class MolecularDockingCenterPositionApi(Resource):
         return center_position, 200
 
 
+class MolecularDockingTaskResultDownloadApi(Resource):
+    """
+    分子对接任务结果下载接口
+    """
+
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        task_id = request.args.get("task_id", default=None, type=str)
+        _range = request.args.get("range", default="all", type=str)
+        sdf_content = MolecularDockingService.download_task_result(task_id, _range, current_user)
+        if sdf_content is None:
+            return {"message": "Task not found"}, 500
+        else:
+            buffer = io.BytesIO()
+            # 如果是文本内容，进行编码
+            buffer.write(sdf_content.encode('utf-8'))
+            # 重置指针到文件开头
+            buffer.seek(0)
+            return send_file(buffer, as_attachment=True, download_name=f"{task_id}.sdf", mimetype='application/octet-stream')
+
+
 class MolecularDockingTaskCustomToolsApi(Resource):
     """
     提供给工作流的自定义工具，分子对接任务接口
@@ -106,5 +130,6 @@ class MolecularDockingTaskCustomToolsApi(Resource):
 
 api.add_resource(MolecularDockingTaskApi, "/molecular-docking/task")
 api.add_resource(MolecularDockingCenterPositionApi, "/molecular-docking/center-position")
+api.add_resource(MolecularDockingTaskResultDownloadApi, "/molecular-docking/download")
 
 api.add_resource(MolecularDockingTaskCustomToolsApi, "/custom-tools/molecular-docking/task")

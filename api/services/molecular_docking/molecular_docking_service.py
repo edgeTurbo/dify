@@ -205,11 +205,50 @@ class MolecularDockingService:
 
         return result_data['output'], True
 
-
     @classmethod
-    def start_task_for_custom_tool(cls, task_name: str, pdb_file_url: str, center_x: float, center_y: float, center_z: float,
-                   size_x: float, size_y: float, size_z: float, ligand_file_urls: list[str], out_pose_num: int,
-                   ) -> dict:
+    def download_task_result(cls, task_id, _range, current_user):
+        """
+        下载分子对接任务结果
+        :param task_id: 分子对接任务id
+        :param _range: 下载文件范围
+        :param current_user: 当前用户
+        :return:
+        """
+        molecular_docking_task = MolecularDockingTask.query.filter_by(id=task_id, created_by=current_user.id).first()
+        if molecular_docking_task is None:
+            return None
+        if molecular_docking_task.status == Status.SUCCESS.status:
+            if _range == 'all':
+                # 下载全部结果
+                # 解析json数据，将mol提取出来，写入到sdf文件
+                result_list = json.loads(molecular_docking_task.result)
+                sdf_content = ""
+                for result in result_list:
+                    sdf_content += result['mol'] + "$$$$\n"
+                return sdf_content
+            else:
+                try:
+                    range_list = [int(x) for x in _range.split(',')]
+                    # 下载指定结果
+                    result_list = json.loads(molecular_docking_task.result)
+                    filter_result_list = list(map(lambda i: result_list[i], range_list))
+                    sdf_content = ""
+                    for result in filter_result_list:
+                        sdf_content += result['mol'] + "$$$$\n"
+                    return sdf_content
+                except Exception as e:
+                    logging.error(f"下载指定结果失败：{e}")
+                    return None
+        else:
+            return None
+
+    # todo 这是临时性的方法，后面可能还需要再深究
+    @classmethod
+    def start_task_for_custom_tool(cls, task_name: str, pdb_file_url: str, center_x: float, center_y: float,
+                                   center_z: float,
+                                   size_x: float, size_y: float, size_z: float, ligand_file_urls: list[str],
+                                   out_pose_num: int,
+                                   ) -> dict:
         """
         Start molecular docking task.
         :param task_name: task name
@@ -228,15 +267,18 @@ class MolecularDockingService:
         ligand_file_buffer_list: list[BufferedReader] = []
         for ligand_file_url in ligand_file_urls:
             ligand_file_buffer_list.append(cls.download_file(ligand_file_url))
-        return cls.main_processor_for_custom_tool(task_name, pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
-                                  center_z,
-                                  size_x, size_y, size_z, out_pose_num)
+        return cls.main_processor_for_custom_tool(task_name, pdb_file_buffer, ligand_file_buffer_list, center_x,
+                                                  center_y,
+                                                  center_z,
+                                                  size_x, size_y, size_z, out_pose_num)
 
+    # todo 这是临时性的方法，后面可能还需要再深究
     @classmethod
     def main_processor_for_custom_tool(cls, task_name: str, pdb_file_buffer: BufferedReader,
-                       ligand_file_buffer_list: list[BufferedReader], center_x: float, center_y: float, center_z: float,
-                       size_x: float, size_y: float, size_z: float, out_pose_num: int,
-                    ) -> dict:
+                                       ligand_file_buffer_list: list[BufferedReader], center_x: float, center_y: float,
+                                       center_z: float,
+                                       size_x: float, size_y: float, size_z: float, out_pose_num: int,
+                                       ) -> dict:
         # 调用DockingProcessorAPI进行docking
         try:
             logging.info(click.style(f"自定义工具 开始分子对接任务：{task_name}", fg='blue'))
@@ -253,7 +295,6 @@ class MolecularDockingService:
             result = {"error": str(e)}
 
         return result
-
 
     @classmethod
     def download_file(cls, file_url):
