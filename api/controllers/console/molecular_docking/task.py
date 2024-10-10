@@ -67,7 +67,7 @@ class MolecularDockingCenterPositionApi(Resource):
         pdb_file_id = data["pdb_file_id"]
         if pdb_file_id is None:
             raise IllegalParametersError()
-        center_position = MolecularDockingService.get_center_position(pdb_file_id, current_user)
+        center_position = MolecularDockingService.get_center_position_and_residue_number_and_chain(pdb_file_id, current_user)
         return center_position, 200
 
 

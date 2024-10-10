@@ -51,8 +51,8 @@ class ToolCenterPositionService:
                 residue_number = int(line[22:26])
                 key = (residue_name, chain, residue_number)
                 if key in centers:
-                    return centers[key]
-        return None
+                    return centers[key], residue_number, chain
+        return None, None, None
 
     @classmethod
     def get_box_center(cls, pdb_file, method='default', **kwargs):
@@ -64,18 +64,22 @@ class ToolCenterPositionService:
             raise ValueError("Invalid input type. Choose either a file path or a string of pdb lines.")
         centers = cls.get_residue_centers(pdb_lines)
         if method == 'default':
-            info = cls.get_first_ligand_center(pdb_lines, centers)
+            info, residue_number, chain = cls.get_first_ligand_center(pdb_lines, centers)
             if info is not None:
                 info.tolist()
                 return {
                     'center_x': info[0],
                     'center_y': info[1],
-                    'center_z': info[2]
+                    'center_z': info[2],
+                    'residue_number': residue_number,
+                    'chain': chain
                 }
             return {
                     'center_x': '',
                     'center_y': '',
-                    'center_z': ''
+                    'center_z': '',
+                    'residue_number': '',
+                    'chain': ''
                 }
 
         elif method == 'specific':
@@ -90,12 +94,16 @@ class ToolCenterPositionService:
                 return {
                     'center_x': info[0],
                     'center_y': info[1],
-                    'center_z': info[2]
+                    'center_z': info[2],
+                    'residue_number': residue_number,
+                    'chain': chain
                 }
             return {
                 'center_x': '',
                 'center_y': '',
-                'center_z': ''
+                'center_z': '',
+                'residue_number': '',
+                'chain': ''
             }
         else:
             raise ValueError("Invalid method. Choose 'default' or 'specific'.")

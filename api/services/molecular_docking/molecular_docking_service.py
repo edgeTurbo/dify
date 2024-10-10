@@ -93,7 +93,7 @@ class MolecularDockingService:
                                       size_x, size_y, size_z, out_pose_num, molecular_docking_task, start_celery)
 
     @classmethod
-    def get_center_position(cls, pdb_file_id: str, user: Union[Account, EndUser]) -> dict:
+    def get_center_position_and_residue_number_and_chain(cls, pdb_file_id: str, user: Union[Account, EndUser]) -> dict:
         """
         获取pdb文件中心点坐标
         :param pdb_file_id: pdb文件id
