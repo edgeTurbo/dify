@@ -45,12 +45,18 @@ class MolecularDockingTaskApi(Resource):
         # 输出结果数目
         out_pose_num = int(data["out_pose_num"])
 
-        if pdb_file_id is None or center_x is None or center_y is None or center_z is None or size_x is None or size_y is None or size_z is None or ligand_file_ids is None or out_pose_num is None:
+        # 链名
+        chain = data["chain"]
+
+        # 数字
+        residue_number = data["residue_number"]
+
+        if pdb_file_id is None or center_x is None or center_y is None or center_z is None or size_x is None or size_y is None or size_z is None or ligand_file_ids is None or out_pose_num is None or chain is None or residue_number is None:
             raise IllegalParametersError()
 
         molecular_docking_task = MolecularDockingService.start_task(task_name, pdb_file_id, center_x, center_y,
                                                                     center_z, size_x, size_y, size_z, ligand_file_ids,
-                                                                    out_pose_num, current_user, start_celery=False)
+                                                                    out_pose_num, chain, residue_number, current_user, start_celery=False)
         return molecular_docking_task, 201
 
 

@@ -18,6 +18,8 @@ from models.account import Account
 from models.model import EndUser, UploadFile
 from models.molecular_docking import MolecularDockingTask, Status
 from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
+from services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
+from services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
 
 ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
 
@@ -39,7 +41,8 @@ class MolecularDockingService:
     @classmethod
     def start_task(cls, task_name: str, pdb_file_id: str, center_x: float, center_y: float, center_z: float,
                    size_x: float, size_y: float, size_z: float, ligand_file_ids: list[str], out_pose_num: int,
-                   user: Union[Account, EndUser], start_celery: bool = True) -> MolecularDockingTask:
+                   chain: str, residue_number: int, user: Union[Account, EndUser],
+                   start_celery: bool = True) -> MolecularDockingTask:
         """
         Start molecular docking task.
         :param task_name: task name
@@ -52,6 +55,8 @@ class MolecularDockingService:
         :param size_z: size z
         :param ligand_file_ids: ligand file ids
         :param out_pose_num: output pose number
+        :param chain: pdb chain
+        :param residue_number: pdb residue number
         :param user: user
         :param start_celery: 是否启动消息队列进行任务处理，true表示使用消息队列一个一个处理任务，false表示不启动直接调用api接口
         :return: molecular docking task object
@@ -82,7 +87,7 @@ class MolecularDockingService:
             # 启动消息队列进行任务处理
             molecular_docking_celery_task.apply_async(
                 args=[user.serialize, center_x, center_y, center_z,
-                      size_x, size_y, size_z, out_pose_num, molecular_docking_task.serialize],
+                      size_x, size_y, size_z, out_pose_num, chain, residue_number, molecular_docking_task.serialize],
             )
             return molecular_docking_task
         else:
@@ -90,7 +95,8 @@ class MolecularDockingService:
             ligand_file_buffer_list = cls.get_upload_file_buffer(ligand_file_ids, user, return_list=True)
             return cls.main_processor(user, task_name, pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
                                       center_z,
-                                      size_x, size_y, size_z, out_pose_num, molecular_docking_task, start_celery)
+                                      size_x, size_y, size_z, out_pose_num, chain, residue_number,
+                                      molecular_docking_task, start_celery)
 
     @classmethod
     def get_center_position_and_residue_number_and_chain(cls, pdb_file_id: str, user: Union[Account, EndUser]) -> dict:
@@ -128,9 +134,29 @@ class MolecularDockingService:
     def main_processor(cls, user: Union[Account, EndUser], task_name: str, pdb_file_buffer: BufferedReader,
                        ligand_file_buffer_list: list[BufferedReader], center_x: float, center_y: float, center_z: float,
                        size_x: float, size_y: float, size_z: float, out_pose_num: int,
+                       chain: str, residue_number: int,
                        molecular_docking_task: MolecularDockingTask, start_celery: bool = True) -> MolecularDockingTask:
         # 调用DockingProcessorAPI进行docking
         try:
+            # 在进行分子对接任务之前，先通过前端提交的chain和residue_number判断是不是包含在全部配体信息里面，如果包含在配体信息里，则需要将其删除
+            # 1. 获取全部配体信息
+            if chain == "" or residue_number == "":
+                logging.info(click.style(f"前端未提交chain和residue_number，不进行配体信息的删除", fg='blue'))
+            else:
+                residue_number = int(residue_number)
+                logging.info(click.style(f"前端提交的chain和residue_number：{chain}和{residue_number}", fg='blue'))
+                unique_ligands = ToolLigandInfoService.extract_unique_ligands(pdb_file_buffer)
+                logging.info(click.style(f"全部配体信息：{unique_ligands}", fg='blue'))
+                # 2. 判断是否包含在配体信息里
+                if (chain, residue_number) in unique_ligands:
+                    logging.info(click.style(f"配体信息中包含{chain}和{residue_number}，将其从pdb文件中删除", fg='blue'))
+                    # 3. 在配体信息中，进行部分删除
+                    pdb_file_buffer = ToolDeleteSpecialLigandService.remove_ligand(pdb_file_buffer, chain, residue_number)
+                else:
+                    logging.info(click.style(f"{chain}和{residue_number}不包含在配体信息中，不做任何处理", fg='blue'))
+                    # 还原坐标
+                    pdb_file_buffer.seek(0)
+
             logging.info(click.style(f"{user.name} 开始分子对接任务：{task_name}", fg='blue'))
             result, success_flag = cls.docking_processor(pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
                                                          center_z,
@@ -144,9 +170,16 @@ class MolecularDockingService:
                 logging.info(click.style(f"分子对接失败", fg='red', bold=True))
                 status = Status.FAILURE.status
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             logging.info(click.style(f"分子对接任务失败：{e}", fg='red', bold=True))
             status = Status.FAILURE.status
             result = e
+        finally:
+            # 关闭所有文件流
+            pdb_file_buffer.close()
+            for ligand_file_buffer in ligand_file_buffer_list:
+                ligand_file_buffer.close()
 
         # 更新任务状态和结果
         molecular_docking_task = MolecularDockingTask.query.filter_by(id=molecular_docking_task.id,
@@ -317,6 +350,7 @@ class MolecularDockingService:
 def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center_y: float,
                                   center_z: float,
                                   size_x: float, size_y: float, size_z: float, out_pose_num: int,
+                                  chain: str, residue_number: int,
                                   molecular_docking_task_dict: dict):
     logging.info(click.style(f"molecular_docking_celery_task 开始执行，任务ID：{self.request.id}", fg='blue'))
     # 因为celery需要序列化之后才能传递到该参数，所以现在的user和molecular_docking_task都是json类型的，需要进行反序列化
@@ -348,6 +382,7 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
         size_y,
         size_z,
         out_pose_num,
+        chain, residue_number,
         molecular_docking_task
     )
     logging.info(click.style(f"molecular_docking_celery_task 执行完成，任务ID：{self.request.id}", fg='blue'))
