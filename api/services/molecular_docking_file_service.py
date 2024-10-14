@@ -6,7 +6,7 @@ from collections.abc import Generator
 from typing import Union
 
 from flask_login import current_user
-from flask import send_file
+from flask import send_file, Response
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import NotFound
 
@@ -19,8 +19,9 @@ from models.account import Account
 from models.model import EndUser, UploadFile
 from services.errors.file import FileTooLargeError, UnsupportedFileTypeError
 from services.file_service import UNSTRUCTURED_ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS
+from services.molecular_docking.tool_rendering_2d_structure_service import ToolRendering2DStructureService
 
-ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
+ALLOWED_EXTENSIONS = ["pdb", "cif", "bcif", "mmcif", "mol", "sdf", "mol2", "xyz"]
 
 PREVIEW_WORDS_LIMIT = 3000
 
@@ -83,12 +84,12 @@ class MolecularDockingFileService:
         return upload_file
 
     @staticmethod
-    def get_file(file_id: str, mime_type: str) -> Generator:
+    def get_file(file_id: str, mime_type: str) -> Response:
         upload_file = db.session.query(UploadFile).filter_by(id=file_id).first()
         if upload_file is None:
             raise NotFound("File not found")
-        return send_file(io.BytesIO(storage.load_once(upload_file.key)), mimetype=mime_type, as_attachment=True, download_name=upload_file.name)
-
+        return send_file(io.BytesIO(storage.load_once(upload_file.key)), mimetype=mime_type, as_attachment=True,
+                         download_name=upload_file.name)
 
     @staticmethod
     def upload_text(text: str, text_name: str) -> UploadFile:
@@ -176,3 +177,21 @@ class MolecularDockingFileService:
         generator = storage.load(upload_file.key)
 
         return generator, upload_file.mime_type
+
+    @staticmethod
+    def rendering_molecule_file(file_id: str, user: Union[Account, EndUser]) -> list[str | None]:
+        """
+        渲染分子结构文件
+        :param file_id: 文件id
+        :param user: 用户信息
+        :return: base64编码的图片列表
+        """
+        upload_file = db.session.query(UploadFile).filter_by(id=file_id, created_by=user.id).first()
+        if upload_file is None:
+            raise NotFound("File not found")
+        if upload_file.extension.lower() not in ["sdf", "mol"]:
+            raise UnsupportedFileTypeError()
+        file_bytes = storage.load(upload_file.key)
+        image_base64_str_list = ToolRendering2DStructureService.generate_molecule_images_by_bytes(file_bytes,
+                                                                                                  upload_file.name)
+        return image_base64_str_list

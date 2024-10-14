@@ -59,12 +59,25 @@ class MolecularDockingFileApi(Resource):
 
 
 class GetFileApi(Resource):
+    """
+    这个路由为什么没有设置需要login_required？
+    是因为这个路由是用来获取pdb文件流提供给前端mol*的渲染，需要修改源代码携带token，比较麻烦，暂时没有登录验证的必要
+    """
     @setup_required
     def get(self, file_id):
         mime_type = request.args.get("mime_type", default="text/plain", type=str)
         file_id = str(file_id)
         file_stream = MolecularDockingFileService.get_file(file_id, mime_type)
         return file_stream
+
+
+class RenderingMoleculeFileApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        file_id = request.args.get("file_id", default=None, type=str)
+        return MolecularDockingFileService.rendering_molecule_file(file_id, current_user), 200
 
 
 # class FileSupportTypeApi(Resource):
@@ -80,3 +93,5 @@ class GetFileApi(Resource):
 api.add_resource(MolecularDockingFileApi, "/molecular-docking/files/upload")
 api.add_resource(GetFileApi, "/molecular-docking/files/<uuid:file_id>")
 # api.add_resource(FileSupportTypeApi, "/files/support-type")
+
+api.add_resource(RenderingMoleculeFileApi, "/molecular-docking/files/rendering")
