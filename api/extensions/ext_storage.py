@@ -60,10 +60,10 @@ class Storage:
             logging.exception("Failed to load file: %s", e)
             raise e
 
-    def load_buffer(self, filename: str) -> BufferedReader:
+    def load_buffer(self, filename: str, origin_filename: str = None) -> BufferedReader:
         file_bytes = self.storage_runner.load_once(filename)
         byte_io = io.BytesIO(file_bytes)
-        byte_io.name = os.path.basename(filename)
+        byte_io.name = origin_filename
         buffered_reader = io.BufferedReader(byte_io)
         return buffered_reader
 

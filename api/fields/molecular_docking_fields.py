@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask_restful import fields
+from fields.file_fields import file_fields
 
 
 # 自定义时间格式化字段
@@ -18,6 +19,7 @@ molecular_docking_task_fields = {
     # 'result_dict' 将作为输出字段名用于前端显示获取，原始数据来自 'result'
     'result': fields.String(attribute="result"),
     'status': fields.String,
+    'remove_ligand_file': fields.Nested(file_fields),
     'created_at': DateTimeFormatted,
     'updated_at': DateTimeFormatted,
 }

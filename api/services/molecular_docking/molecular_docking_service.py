@@ -1,8 +1,10 @@
 import datetime
+import hashlib
 import io
 import json
 import logging
 import os.path
+import uuid
 from io import BufferedReader
 from typing import Union, Tuple
 
@@ -124,11 +126,11 @@ class MolecularDockingService:
             upload_file_buffer_list = []
             for upload_file_id in upload_file_ids:
                 upload_file = UploadFile.query.filter_by(id=upload_file_id, created_by=user.id).first()
-                upload_file_buffer_list.append(storage.load_buffer(upload_file.key))
+                upload_file_buffer_list.append(storage.load_buffer(upload_file.key, upload_file.name))
             return upload_file_buffer_list
         else:
             upload_file = UploadFile.query.filter_by(id=upload_file_ids, created_by=user.id).first()
-            return storage.load_buffer(upload_file.key)
+            return storage.load_buffer(upload_file.key, upload_file.name)
 
     @classmethod
     def main_processor(cls, user: Union[Account, EndUser], task_name: str, pdb_file_buffer: BufferedReader,
@@ -136,6 +138,8 @@ class MolecularDockingService:
                        size_x: float, size_y: float, size_z: float, out_pose_num: int,
                        chain: str, residue_number: int,
                        molecular_docking_task: MolecularDockingTask, start_celery: bool = True) -> MolecularDockingTask:
+        remove_ligand_file_id = None
+        remove_ligand_file = None
         # 调用DockingProcessorAPI进行docking
         try:
             # 在进行分子对接任务之前，先通过前端提交的chain和residue_number判断是不是包含在全部配体信息里面，如果包含在配体信息里，则需要将其删除
@@ -152,9 +156,36 @@ class MolecularDockingService:
                     logging.info(click.style(f"配体信息中包含{chain}和{residue_number}，将其从pdb文件中删除", fg='blue'))
                     # 3. 在配体信息中，进行部分删除
                     pdb_file_buffer = ToolDeleteSpecialLigandService.remove_ligand(pdb_file_buffer, chain, residue_number)
+                    # 4. 将新的pdb文件进行保存
+                    new_pdb_file_file_key = "upload_files/" + user.current_tenant_id + "/" + str(uuid.uuid4()) + "." + pdb_file_buffer.name.split('.')[-1]
+                    file_content = pdb_file_buffer.read()
+                    file_size = len(file_content)
+                    pdb_file_buffer.seek(0)
+                    storage.save(new_pdb_file_file_key, pdb_file_buffer.read())
+                    pdb_file_buffer.seek(0)
+                    # 5. 在文件数据表中新增一条修改过后的pdb文件记录
+                    new_pdb_file = UploadFile(
+                        tenant_id=user.current_tenant_id,
+                        storage_type=dify_config.STORAGE_TYPE,
+                        key=new_pdb_file_file_key,
+                        name=f"{pdb_file_buffer.name.split('.')[0]}_modified.{pdb_file_buffer.name.split('.')[-1]}",
+                        size=file_size,
+                        extension=pdb_file_buffer.name.split('.')[-1],
+                        mime_type="application/octet-stream",
+                        created_by_role=("account" if isinstance(user, Account) else "end_user"),
+                        created_by=user.id,
+                        created_at=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+                        used=False,
+                        hash=hashlib.sha3_256(file_content).hexdigest(),
+                    )
+                    db.session.add(new_pdb_file)
+                    db.session.commit()
+                    # 6. 更新任务中的remove_ligand_file_id
+                    remove_ligand_file_id = new_pdb_file.id
+                    remove_ligand_file = new_pdb_file
                 else:
                     logging.info(click.style(f"{chain}和{residue_number}不包含在配体信息中，不做任何处理", fg='blue'))
-                    # 还原坐标
+                    # 还原文件坐标
                     pdb_file_buffer.seek(0)
 
             logging.info(click.style(f"{user.name} 开始分子对接任务：{task_name}", fg='blue'))
@@ -187,6 +218,9 @@ class MolecularDockingService:
         molecular_docking_task.status = status
         molecular_docking_task.result = result
         molecular_docking_task.updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if remove_ligand_file_id is not None:
+            molecular_docking_task.remove_ligand_file_id = remove_ligand_file_id
+            molecular_docking_task.remove_ligand_file = remove_ligand_file
         db.session.commit()
 
         if start_celery:

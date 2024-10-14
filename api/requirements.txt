@@ -62,6 +62,7 @@ defusedxml==0.7.1
 Deprecated==1.2.14
 dill==0.3.8
 distro==1.9.0
+dnspython==2.7.0
 docker==7.1.0
 docstring_parser==0.16
 duckduckgo_search==6.2.13
@@ -229,6 +230,7 @@ pyxlsb==1.0.10
 PyYAML==6.0.2
 qrcode==7.4.2
 rapidfuzz==3.9.7
+rdkit==2024.3.5
 readabilipy==0.2.0
 redis==5.0.8
 referencing==0.35.1

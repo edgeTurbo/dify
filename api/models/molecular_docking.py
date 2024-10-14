@@ -47,6 +47,8 @@ class MolecularDockingTask(db.Model):
 
     ligand_file_ids = db.Column(db.ARRAY(db.String(155)), nullable=True, comment="分子对接任务所需的ligand文件id数组，多个ligand文件以数组形式存储")
 
+    remove_ligand_file_id = db.Column(db.String(155), server_default='', nullable=False, comment="移除ligand小分子之后的pdb文件id")
+
     out_pose_num = db.Column(db.Integer, nullable=True, comment="分子对接任务的输出结果pose数量")
 
     result = db.Column(db.Text, nullable=True, comment="分子对接的结果")
@@ -57,6 +59,8 @@ class MolecularDockingTask(db.Model):
                            comment="创建时间")
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"),
                            comment="更新时间")
+
+    remove_ligand_file = None
 
     @property
     def serialize(self):
@@ -71,6 +75,7 @@ class MolecularDockingTask(db.Model):
             "size_y": self.size_y,
             "size_z": self.size_z,
             "ligand_file_ids": self.ligand_file_ids,
+            "remove_ligand_file_id": self.remove_ligand_file_id,
             "out_pose_num": self.out_pose_num,
             "result": self.result,
             "status": self.status,
