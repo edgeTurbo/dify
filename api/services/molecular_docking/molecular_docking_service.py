@@ -19,6 +19,7 @@ from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
 from models.molecular_docking import MolecularDockingTask, Status
+from models.sciminer import SciminerHistoryTask
 from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
 from services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
 from services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
@@ -83,6 +84,18 @@ class MolecularDockingService:
             created_by=user.id,
         )
         db.session.add(molecular_docking_task)
+        db.session.commit()
+
+        # 新增任务历史记录
+        sciminer_history_task = SciminerHistoryTask(
+            task_id=molecular_docking_task.id,
+            task_name=task_name,
+            task_type="POCKET_DOCKING",
+            label="Pocket docking",
+            status=status,
+            created_by=user.id,
+        )
+        db.session.add(sciminer_history_task)
         db.session.commit()
 
         if start_celery:
@@ -212,7 +225,7 @@ class MolecularDockingService:
             for ligand_file_buffer in ligand_file_buffer_list:
                 ligand_file_buffer.close()
 
-        # 更新任务状态和结果
+        # todo 更新任务状态和结果,后期这个MolecularDockingTask的任务状态需要删除，使用sciminer_history_task数据表来接管，现在先全部数据表更新
         molecular_docking_task = MolecularDockingTask.query.filter_by(id=molecular_docking_task.id,
                                                                       created_by=user.id).first()
         molecular_docking_task.status = status
@@ -221,6 +234,12 @@ class MolecularDockingService:
         if remove_ligand_file_id is not None:
             molecular_docking_task.remove_ligand_file_id = remove_ligand_file_id
             molecular_docking_task.remove_ligand_file = remove_ligand_file
+        db.session.commit()
+
+        # 在sciminer_history_task数据表中更新任务状态
+        SciminerHistoryTask.query.filter_by(task_id=molecular_docking_task.id, created_by=user.id).update(
+            {'status': status}
+        )
         db.session.commit()
 
         if start_celery:
@@ -390,9 +409,14 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
     # 因为celery需要序列化之后才能传递到该参数，所以现在的user和molecular_docking_task都是json类型的，需要进行反序列化
     molecular_docking_task = MolecularDockingTask(**molecular_docking_task_dict)
     user = Account(**user_dict)
-    # 更新任务状态为正在处理中
+    # todo 更新任务状态为正在处理中,后期这个MolecularDockingTask需要删除，使用sciminer_history_task数据表来接管，现在先全部数据表更新
     MolecularDockingTask.query.filter_by(id=molecular_docking_task.id, created_by=user.id).update(
         {'status': Status.PROCESSING.status})
+    db.session.commit()
+
+    SciminerHistoryTask.query.filter_by(task_id=molecular_docking_task.id, user_id=user.id).update(
+        {'status': Status.PROCESSING.status}
+    )
     db.session.commit()
 
     calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
