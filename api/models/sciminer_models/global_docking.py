@@ -1,7 +1,7 @@
 """
 @Time    : 2024/10/16 下午1:36
 @Author  : bigboss
-@Description : 
+@Description : 全局分子对接的模型类
 """
 from enum import Enum
 

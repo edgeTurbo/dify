@@ -1,10 +1,12 @@
-import datetime
-import hashlib
+"""
+@Time    : 2024/10/16 下午1:36
+@Author  : bigboss
+@Description : 全局分子对接的服务类
+"""
 import io
 import json
 import logging
 import os.path
-import uuid
 from io import BufferedReader
 from typing import Union, Tuple
 
@@ -18,13 +20,9 @@ from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
-from models.molecular_docking import MolecularDockingTask, Status
+from models.molecular_docking import Status
 from models.sciminer import SciminerHistoryTask
 from models.sciminer_models.global_docking import GlobalDockingTask
-from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
-from services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
-from services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
-from services.molecular_docking_file_service import MolecularDockingFileService
 
 if dify_config.GLOBAL_DOCKING_API_URL == "" or dify_config.GLOBAL_DOCKING_API_URL is None:
     logging.error(
