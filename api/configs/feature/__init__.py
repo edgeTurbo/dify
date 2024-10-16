@@ -13,8 +13,8 @@ class SecurityConfig(BaseSettings):
 
     SECRET_KEY: Optional[str] = Field(
         description="Secret key for secure session cookie signing."
-        "Make sure you are changing this key for your deployment with a strong key."
-        "Generate a strong key using `openssl rand -base64 42` or set via the `SECRET_KEY` environment variable.",
+                    "Make sure you are changing this key for your deployment with a strong key."
+                    "Generate a strong key using `openssl rand -base64 42` or set via the `SECRET_KEY` environment variable.",
         default=None,
     )
 
@@ -117,7 +117,7 @@ class EndpointConfig(BaseSettings):
 
     CONSOLE_API_URL: str = Field(
         description="Base URL for the console API,"
-        "used for login authentication callback or notion integration callbacks",
+                    "used for login authentication callback or notion integration callbacks",
         default="",
     )
 
@@ -144,8 +144,8 @@ class FileAccessConfig(BaseSettings):
 
     FILES_URL: str = Field(
         description="Base URL for file preview or download,"
-        " used for frontend display and multi-model inputs"
-        "Url is signed and has expiration time.",
+                    " used for frontend display and multi-model inputs"
+                    "Url is signed and has expiration time.",
         validation_alias=AliasChoices("FILES_URL", "CONSOLE_API_URL"),
         alias_priority=1,
         default="",
@@ -475,7 +475,7 @@ class RagEtlConfig(BaseSettings):
 
     KEYWORD_DATA_SOURCE_TYPE: str = Field(
         description="Data source type for keyword extraction"
-        " ('database' or other supported types), default to 'database'",
+                    " ('database' or other supported types), default to 'database'",
         default="database",
     )
 
@@ -600,7 +600,14 @@ class PositionConfig(BaseSettings):
 
 class MolecularDockingConfig(BaseSettings):
     MOLECULAR_DOCKING_API_URL: str = Field(
-        description="Molecular docking API URL",
+        description="Pocket docking API URL",
+        default=None,
+    )
+
+
+class GlobalDockingConfig(BaseSettings):
+    GLOBAL_DOCKING_API_URL: str = Field(
+        description="Global docking API URL",
         default=None,
     )
 
@@ -634,5 +641,6 @@ class FeatureConfig(
     HostedServiceConfig,
     CeleryBeatConfig,
     MolecularDockingConfig,
+    GlobalDockingConfig,
 ):
     pass

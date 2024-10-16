@@ -42,7 +42,7 @@ class GlobalDockingTask(db.Model):
 
     fasta_file_id = db.Column(db.String(155), nullable=True, comment="全局分子对接任务所需的fasta文件id")
 
-    ligand_file_id = db.Column(db.String(155), nullable=True, comment="全局分子对接任务所需的ligand文件id")
+    ligand_file_ids = db.Column(db.ARRAY(db.String(155)), nullable=True, comment="全局分子对接任务所需的ligand文件id数组，多个ligand文件以数组形式存储")
 
     out_pose_num = db.Column(db.Integer, nullable=True, comment="全局分子对接任务的输出结果pose数量")
 
@@ -53,6 +53,8 @@ class GlobalDockingTask(db.Model):
                            comment="创建时间")
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"),
                            onupdate=db.text("CURRENT_TIMESTAMP(0)"), comment="更新时间")
+
+    status = None
 
     @property
     def serialize(self):
