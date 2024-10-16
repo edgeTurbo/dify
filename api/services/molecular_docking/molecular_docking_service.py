@@ -23,6 +23,7 @@ from models.sciminer import SciminerHistoryTask
 from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
 from services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
 from services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
+from services.molecular_docking_file_service import MolecularDockingFileService
 
 ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
 
@@ -170,7 +171,10 @@ class MolecularDockingService:
                     # 3. 在配体信息中，进行部分删除
                     pdb_file_buffer = ToolDeleteSpecialLigandService.remove_ligand(pdb_file_buffer, chain, residue_number)
                     # 4. 将新的pdb文件进行保存
-                    new_pdb_file_file_key = "upload_files/" + user.current_tenant_id + "/" + str(uuid.uuid4()) + "." + pdb_file_buffer.name.split('.')[-1]
+                    new_pdb_file_file_key, current_tenant_id = MolecularDockingFileService.get_pocket_docking_file_path(
+                        file_name=str(uuid.uuid4()) + "." + pdb_file_buffer.name.split('.')[-1],
+                        user=user
+                    )
                     file_content = pdb_file_buffer.read()
                     file_size = len(file_content)
                     pdb_file_buffer.seek(0)
@@ -178,7 +182,7 @@ class MolecularDockingService:
                     pdb_file_buffer.seek(0)
                     # 5. 在文件数据表中新增一条修改过后的pdb文件记录
                     new_pdb_file = UploadFile(
-                        tenant_id=user.current_tenant_id,
+                        tenant_id=current_tenant_id,
                         storage_type=dify_config.STORAGE_TYPE,
                         key=new_pdb_file_file_key,
                         name=f"{pdb_file_buffer.name.split('.')[0]}_modified.{pdb_file_buffer.name.split('.')[-1]}",
