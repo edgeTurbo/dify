@@ -27,6 +27,22 @@ PREVIEW_WORDS_LIMIT = 3000
 
 
 class MolecularDockingFileService:
+
+    @staticmethod
+    def get_pocket_docking_file_path(file_name: str, user: Union[Account, EndUser]):
+        """
+        获取口袋对接文件保存路径
+        :param file_name: 文件名
+        :param user:     用户
+        :return: 文件路径
+        """
+        date_path = datetime.datetime.now().strftime('%Y/%m/%d')
+        if isinstance(user, Account):
+            current_tenant_id = user.current_tenant_id
+        else:
+            current_tenant_id = user.tenant_id
+        return f"upload_files/{current_tenant_id}/pocket_docking/{date_path}/{file_name}", current_tenant_id
+
     @staticmethod
     def upload_file(file: FileStorage, user: Union[Account, EndUser]) -> UploadFile:
         filename = file.filename
@@ -51,13 +67,10 @@ class MolecularDockingFileService:
         # user uuid as file name
         file_uuid = str(uuid.uuid4())
 
-        if isinstance(user, Account):
-            current_tenant_id = user.current_tenant_id
-        else:
-            # end_user
-            current_tenant_id = user.tenant_id
-
-        file_key = "upload_files/" + current_tenant_id + "/" + file_uuid + "." + extension
+        file_key, current_tenant_id = MolecularDockingFileService.get_pocket_docking_file_path(
+            file_name=file_uuid + "." + extension,
+            user=user
+        )
 
         # save file to storage
         storage.save(file_key, file_content)

@@ -60,3 +60,6 @@ from .workspace import account, load_balancing_config, members, model_providers,
 
 # Import molecular docking controllers
 from .molecular_docking import file, task
+
+# Import global docking controllers
+from .sciminer_apps.global_docking import file
