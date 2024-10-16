@@ -27,16 +27,16 @@ from services.molecular_docking_file_service import MolecularDockingFileService
 
 ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
 
-if dify_config.MOLECULAR_DOCKING_API_URL == "":
+if dify_config.MOLECULAR_DOCKING_API_URL == "" or dify_config.MOLECULAR_DOCKING_API_URL is None:
     logging.error(
         click.style(
-            "分子对接API URL不能为空, 请在配置文件.env中设置MOLECULAR_DOCKING_API_URL, 否则分子对接功能无法正常使用",
+            "口袋对接API URL不能为空, 请在配置文件.env中设置MOLECULAR_DOCKING_API_URL, 否则分子对接功能无法正常使用",
             fg='red', bold=True))
 
 if dify_config.INNER_API is None or dify_config.INNER_API_KEY is None:
     logging.error(
         click.style(
-            "内网API地址或API KEY未设置, 请在配置文件.env中设置INNER_API为true和INNER_API_KEY, 否则分子对接功能无法正常使用",
+            "内网API地址或API KEY未设置, 请在配置文件.env中设置INNER_API为true和INNER_API_KEY, 否则分子对接功能无法正常使用，如websocket",
             fg='red', bold=True)
     )
 
