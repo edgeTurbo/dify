@@ -13,6 +13,7 @@ from typing import Union, Tuple
 import click
 import requests
 from celery import shared_task
+from rdkit import Chem
 
 from configs import dify_config
 from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
@@ -121,16 +122,16 @@ class GlobalDockingService:
             logging.info(click.style(f"{user.name} 开始全局分子对接任务：{task_name}", fg='green'))
             result, success_flag = cls.docking_processor(fasta_file_buffer, ligand_file_buffer_list, out_pose_num)
             if success_flag:
-                logging.info(click.style(f"分子对接成功", fg='green'))
+                logging.info(click.style(f"全局分子对接成功", fg='green'))
                 status = Status.SUCCESS.status
                 result = json.dumps(result)
             else:
-                logging.info(click.style(f"分子对接失败", fg='red', bold=True))
+                logging.info(click.style(f"全局分子对接失败", fg='red', bold=True))
                 status = Status.FAILURE.status
         except Exception as e:
             import traceback
             traceback.print_exc()
-            logging.info(click.style(f"分子对接任务失败：{e}", fg='red', bold=True))
+            logging.info(click.style(f"全局分子对接任务失败：{e}", fg='red', bold=True))
             status = Status.FAILURE.status
             result = e
         finally:
@@ -171,23 +172,34 @@ class GlobalDockingService:
         :param out_pose_num: output pose number
         :return: result data and success or not
         """
+
+        protein_content = fasta_file_buffer.read().decode('utf-8')
+        # 如果开头是>，则去掉>所在的那一行
+        protein_lines = protein_content.splitlines()
+        # 使用列表推导式来过滤掉以">"开头的行
+        filtered_protein_lines = [line for line in protein_lines if not line.startswith(">")]
+        protein_content = "\n".join(filtered_protein_lines)
+
+        smiles_list = []
+
+        for ligand_file_buffer in ligand_file_buffer_list:
+            mol = Chem.MolFromMolBlock(ligand_file_buffer.read().decode('utf-8'))
+            smiles = Chem.MolToSmiles(mol)
+            smiles_list.append(smiles)
+
         docking_params = {
-            "num_modes": out_pose_num,
-            "out": "out.sdf"
-        }
-        files = {
-            'receptor_file': fasta_file_buffer,
-            # todo 这里后期可能需要支持多个ligand文件，现在默认只支持一个
-            'ligand_file': ligand_file_buffer_list[0] if len(ligand_file_buffer_list) == 1 else None
+            "protein_content": protein_content,
+            "smiles_list": smiles_list,
+            # "num_modes": out_pose_num,
         }
 
-        response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, files=files, data=docking_params, timeout=120)
+        response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=600)
         result_data = response.json()
 
         if 'error' in result_data:
             return result_data['error'], False
 
-        return result_data['output'], True
+        return result_data['message'], True
 
     # @classmethod
     # def download_task_result(cls, task_id, _range, current_user):
