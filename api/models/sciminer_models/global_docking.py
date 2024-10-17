@@ -56,6 +56,8 @@ class GlobalDockingTask(db.Model):
 
     status = None
 
+    task_name = None
+
     @property
     def serialize(self):
         return {

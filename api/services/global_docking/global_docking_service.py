@@ -145,6 +145,7 @@ class GlobalDockingService:
                                                                 created_by=user.id).first()
         global_docking_task.result = result
         global_docking_task.status = status
+        global_docking_task.task_name = task_name
         db.session.commit()
 
         # 在sciminer_history_task数据表中更新任务状态

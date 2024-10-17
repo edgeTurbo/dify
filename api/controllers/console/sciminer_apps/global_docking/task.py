@@ -11,7 +11,7 @@ from controllers.console.molecular_docking.error import (
 )
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required, cloud_edition_billing_resource_check
-from fields.molecular_docking_fields import molecular_docking_task_fields
+from fields.global_docking_fields import global_docking_task_fields
 from libs.login import login_required
 from services.global_docking.global_docking_service import GlobalDockingService
 
@@ -21,7 +21,7 @@ class GlobalDockingTaskApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @marshal_with(molecular_docking_task_fields)
+    @marshal_with(global_docking_task_fields)
     # @cloud_edition_billing_resource_check("documents")
     def post(self):
         data = request.get_json()
