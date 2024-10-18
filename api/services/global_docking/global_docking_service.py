@@ -175,11 +175,6 @@ class GlobalDockingService:
         """
 
         protein_content = fasta_file_buffer.read().decode('utf-8')
-        # 如果开头是>，则去掉>所在的那一行
-        protein_lines = protein_content.splitlines()
-        # 使用列表推导式来过滤掉以">"开头的行
-        filtered_protein_lines = [line for line in protein_lines if not line.startswith(">")]
-        protein_content = "\n".join(filtered_protein_lines)
 
         smiles_list = []
 
