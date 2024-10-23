@@ -3,6 +3,7 @@
 @Author  : bigboss
 @Description : 全局对接的文件服务
 """
+import io
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
@@ -10,6 +11,7 @@ from typing import Union, Tuple
 
 import click
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from werkzeug.datastructures import FileStorage
 
 from configs import dify_config
@@ -110,30 +112,41 @@ class GlobalDockingFileService:
         mimetype = "text/plain"
         if isinstance(file, str):
             file_content_list = file.split('\n')
+            file_name = f"{str(uuid.uuid4())}.sdf"
+            # 使用 io.StringIO 作为内存中的文件
+            sdf_block = io.StringIO()
+            # 创建一个 SDWriter 用于写入内存中的文件
+            writer = Chem.SDWriter(sdf_block)
             for file_content_temp in file_content_list:
-                file_name = f"{str(uuid.uuid4())}.mol"
                 mol = Chem.MolFromSmiles(file_content_temp.strip())
                 if mol is None:
                     logging.error(click.style(f"无法解析ligand字符串，请检查格式是否正确", fg="red"))
+                    writer.close()
+                    sdf_block.close()
                     raise UnsupportedFileTypeError()
-                mol_content = Chem.MolToMolBlock(mol)
-                file_content = mol_content.encode('utf-8')
-                file_size = len(file_content)
 
-                extension = file_name.split('.')[-1]
+                # 计算 2D 坐标，适用于可视化或 SDF 格式
+                AllChem.Compute2DCoords(mol)
+                writer.write(mol)
+            writer.close()
+            file_content = sdf_block.getvalue().encode('utf-8')
+            file_size = len(file_content)
+            sdf_block.close()
 
-                file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
+            extension = file_name.split('.')[-1]
 
-                file_info = GlobalDockingFileInfo(
-                    file_name=file_name,
-                    file_content=file_content,
-                    file_size=file_size,
-                    mimetype=mimetype,
-                    extension=extension,
-                    file_key=file_key,
-                    current_tenant_id=current_tenant_id,
-                )
-                global_docking_file_info_list.append(file_info)
+            file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
+
+            file_info = GlobalDockingFileInfo(
+                file_name=file_name,
+                file_content=file_content,
+                file_size=file_size,
+                mimetype=mimetype,
+                extension=extension,
+                file_key=file_key,
+                current_tenant_id=current_tenant_id,
+            )
+            global_docking_file_info_list.append(file_info)
         else:
             if file.filename.split('.')[-1] not in ALLOWED_LIGAND_EXTENSIONS:
                 raise UnsupportedFileTypeError()

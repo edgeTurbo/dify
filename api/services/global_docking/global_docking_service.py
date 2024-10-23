@@ -179,9 +179,18 @@ class GlobalDockingService:
         smiles_list = []
 
         for ligand_file_buffer in ligand_file_buffer_list:
-            mol = Chem.MolFromMolBlock(ligand_file_buffer.read().decode('utf-8'))
-            smiles = Chem.MolToSmiles(mol)
-            smiles_list.append(smiles)
+            supplier = Chem.ForwardSDMolSupplier(ligand_file_buffer)
+            # 遍历分子，提取 SMILES
+            for mol in supplier:
+                if mol is not None:
+                    smiles = Chem.MolToSmiles(mol)
+                    logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
+                    smiles_list.append(smiles)
+                else:
+                    logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
+
+        if len(smiles_list) == 0:
+            raise ValueError("没有可供对接的分子")
 
         docking_params = {
             "protein_content": protein_content,
@@ -189,7 +198,7 @@ class GlobalDockingService:
             # "num_modes": out_pose_num,
         }
 
-        response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=600)
+        response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=360*len(smiles_list))
         result_data = response.json()
 
         if 'error' in result_data:
