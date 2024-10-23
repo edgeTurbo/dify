@@ -151,32 +151,43 @@ class GlobalDockingFileService:
             if file.filename.split('.')[-1] not in ALLOWED_LIGAND_EXTENSIONS:
                 raise UnsupportedFileTypeError()
             file_content_list = file.read().decode('utf-8').split('\n')
+
+            file_name = f"{str(uuid.uuid4())}.sdf"
+            # 使用 io.StringIO 作为内存中的文件
+            sdf_block = io.StringIO()
+            # 创建一个 SDWriter 用于写入内存中的文件
+            writer = Chem.SDWriter(sdf_block)
+
             for file_content in file_content_list:
-                file_name = f"{str(uuid.uuid4())}.mol"
-                file_content = file_content.strip()
-                mol = Chem.MolFromSmiles(file_content)
+                mol = Chem.MolFromSmiles(file_content.strip())
                 if mol is None:
-                    logging.error(
-                        click.style(f"无法解析ligand文件中的一行: {file_content}，请检查格式是否正确", fg="red"))
+                    logging.error(click.style(f"无法解析ligand字符串，请检查格式是否正确", fg="red"))
+                    writer.close()
+                    sdf_block.close()
                     raise UnsupportedFileTypeError()
-                mol_content = Chem.MolToMolBlock(mol)
-                file_content = mol_content.encode('utf-8')
-                file_size = len(file_content)
 
-                extension = file_name.split('.')[-1]
+                # 计算 2D 坐标，适用于可视化或 SDF 格式
+                AllChem.Compute2DCoords(mol)
+                writer.write(mol)
+            writer.close()
+            file_content = sdf_block.getvalue().encode('utf-8')
+            file_size = len(file_content)
+            sdf_block.close()
 
-                file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
+            extension = file_name.split('.')[-1]
 
-                file_info = GlobalDockingFileInfo(
-                    file_name=file_name,
-                    file_content=file_content,
-                    file_size=file_size,
-                    mimetype=mimetype,
-                    extension=extension,
-                    file_key=file_key,
-                    current_tenant_id=current_tenant_id,
-                )
-                global_docking_file_info_list.append(file_info)
+            file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
+
+            file_info = GlobalDockingFileInfo(
+                file_name=file_name,
+                file_content=file_content,
+                file_size=file_size,
+                mimetype=mimetype,
+                extension=extension,
+                file_key=file_key,
+                current_tenant_id=current_tenant_id,
+            )
+            global_docking_file_info_list.append(file_info)
 
         upload_file_list = []
         # 保存文件

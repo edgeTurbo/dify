@@ -45,29 +45,23 @@ class GlobalDockingTaskApi(Resource):
         return global_docking_task, 201
 
 
-# class GlobalDockingTaskResultDownloadApi(Resource):
-#     """
-#     分子对接任务结果下载接口
-#     """
-#
-#     @setup_required
-#     @login_required
-#     @account_initialization_required
-#     def get(self):
-#         task_id = request.args.get("task_id", default=None, type=str)
-#         _range = request.args.get("range", default="all", type=str)
-#         sdf_content = MolecularDockingService.download_task_result(task_id, _range, current_user)
-#         if sdf_content is None:
-#             return {"message": "Task not found"}, 500
-#         else:
-#             buffer = io.BytesIO()
-#             # 如果是文本内容，进行编码
-#             buffer.write(sdf_content.encode('utf-8'))
-#             # 重置指针到文件开头
-#             buffer.seek(0)
-#             return send_file(buffer, as_attachment=True, download_name=f"{task_id}.sdf",
-#                              mimetype='application/octet-stream')
+class GlobalDockingTaskResultDownloadApi(Resource):
+    """
+    分子对接任务结果下载接口
+    """
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        task_id = request.args.get("task_id", default=None, type=str)
+        _range = request.args.get("range", default="all", type=str)
+        zip_buffer = GlobalDockingService.download_task_result(task_id, _range, current_user)
+        if zip_buffer is None:
+            return {"message": "Task not found"}, 500
+        else:
+            return send_file(zip_buffer, as_attachment=True, download_name=f"{task_id}.zip",
+                             mimetype='application/octet-stream')
 
 
 api.add_resource(GlobalDockingTaskApi, "/global-docking/task")
-# api.add_resource(GlobalDockingTaskResultDownloadApi, "/global-docking/download")
+api.add_resource(GlobalDockingTaskResultDownloadApi, "/global-docking/download")

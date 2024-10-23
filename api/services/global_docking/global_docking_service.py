@@ -3,10 +3,12 @@
 @Author  : bigboss
 @Description : 全局分子对接的服务类
 """
+import csv
 import io
 import json
 import logging
 import os.path
+import zipfile
 from io import BufferedReader
 from typing import Union, Tuple
 
@@ -206,43 +208,88 @@ class GlobalDockingService:
 
         return result_data['message'], True
 
-    # @classmethod
-    # def download_task_result(cls, task_id, _range, current_user):
-    #     """
-    #     下载分子对接任务结果
-    #     :param task_id: 分子对接任务id
-    #     :param _range: 下载文件范围
-    #     :param current_user: 当前用户
-    #     :return:
-    #     """
-    #     molecular_docking_task = MolecularDockingTask.query.filter_by(id=task_id, created_by=current_user.id).first()
-    #     if molecular_docking_task is None:
-    #         return None
-    #     if molecular_docking_task.status == Status.SUCCESS.status:
-    #         if _range == 'all':
-    #             # 下载全部结果
-    #             # 解析json数据，将mol提取出来，写入到sdf文件
-    #             result_list = json.loads(molecular_docking_task.result)
-    #             sdf_content = ""
-    #             for result in result_list:
-    #                 sdf_content += result['mol'] + "$$$$\n"
-    #             return sdf_content
-    #         else:
-    #             try:
-    #                 range_list = [int(x) for x in _range.split(',')]
-    #                 # 下载指定结果
-    #                 result_list = json.loads(molecular_docking_task.result)
-    #                 filter_result_list = list(map(lambda i: result_list[i], range_list))
-    #                 sdf_content = ""
-    #                 for result in filter_result_list:
-    #                     sdf_content += result['mol'] + "$$$$\n"
-    #                 return sdf_content
-    #             except Exception as e:
-    #                 logging.error(f"下载指定结果失败：{e}")
-    #                 return None
-    #     else:
-    #         return None
-    #
+    @classmethod
+    def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = True):
+        """
+        下载分子对接任务结果
+        :param task_id: 分子对接任务id
+        :param _range: 下载文件范围
+        :param current_user: 当前用户
+        :param zip_csv_file: 是否要压缩csv文件，默认不压缩
+        :return:
+        """
+        global_docking_task = GlobalDockingTask.query.filter_by(id=task_id, created_by=current_user.id).first()
+        if global_docking_task is None:
+            return None
+        if global_docking_task.result is None:
+            return None
+        sciminer_history_task = SciminerHistoryTask.query.filter_by(task_id=task_id, created_by=current_user.id).first()
+        if sciminer_history_task.status == Status.SUCCESS.status:
+            zip_buffer = io.BytesIO()
+            if _range == 'all':
+                with zipfile.ZipFile(zip_buffer, 'w') as _zip:
+                # 下载全部结果
+                # 解析json数据，将mol提取出来，写入到zip文件
+                    result_list = json.loads(global_docking_task.result)
+                    for result in result_list:
+                        file_name = f"complex{result['mode']}.cif"
+                        _zip.writestr(file_name, result['mol'])
+
+                    if zip_csv_file:
+                        csv_content = cls.get_csv_data(data=result_list)
+                        _zip.writestr('result.csv', csv_content)
+
+                zip_buffer.seek(0)
+                return zip_buffer
+            else:
+                try:
+                    range_list = [int(x) for x in _range.split(',')]
+                    # 下载指定结果
+                    result_list = json.loads(global_docking_task.result)
+                    filter_result_list = list(map(lambda i: result_list[i], range_list))
+                    with zipfile.ZipFile(zip_buffer, 'w') as _zip:
+                        for result in filter_result_list:
+                            file_name = f"complex{result['mode']}.cif"
+                            _zip.writestr(file_name, result['mol'])
+
+                        if zip_csv_file:
+                            csv_content = cls.get_csv_data(data=filter_result_list)
+                            _zip.writestr('result.csv', csv_content)
+
+                    zip_buffer.seek(0)
+                    return zip_buffer
+                except Exception as e:
+                    logging.error(f"下载指定结果失败：{e}")
+                    return None
+        else:
+            return None
+
+    @classmethod
+    def get_csv_data(cls, data: list) -> str:
+        if data:
+            csv_io = io.StringIO()
+            try:
+                # 删除mol字段
+                data[0].pop('mol', None)
+                headers = data[0].keys()
+                headers = ['mode'] + [x for x in headers if x != 'mode']
+
+                writer = csv.DictWriter(csv_io, fieldnames=headers)
+                # 写入表头
+                writer.writeheader()
+                for row in data:
+                    row.pop('mol', None)
+                    row['mode'] = f'="{row["mode"]}"'
+                    writer.writerow(row)
+                csv_content = csv_io.getvalue()
+                return csv_content
+            except Exception as e:
+                logging.error(click.style(f"生成csv文件失败：{e}", fg='red', bold=True))
+                raise ValueError("生成csv文件失败")
+            finally:
+                csv_io.close()
+
+
     # # todo 这是临时性的方法，后面可能还需要再深究
     # @classmethod
     # def start_task_for_custom_tool(cls, task_name: str, pdb_file_url: str, center_x: float, center_y: float,
