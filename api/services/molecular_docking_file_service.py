@@ -202,7 +202,7 @@ class MolecularDockingFileService:
         upload_file = db.session.query(UploadFile).filter_by(id=file_id, created_by=user.id).first()
         if upload_file is None:
             raise NotFound("File not found")
-        if upload_file.extension.lower() not in ["sdf", "mol"]:
+        if upload_file.extension.lower() not in ["sdf", "mol", "pdb", "mol2"]:
             raise UnsupportedFileTypeError()
         file_bytes = storage.load(upload_file.key)
         image_base64_str_list = ToolRendering2DStructureService.generate_molecule_images_by_bytes(file_bytes,
