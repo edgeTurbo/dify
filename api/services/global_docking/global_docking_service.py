@@ -209,7 +209,7 @@ class GlobalDockingService:
         return result_data['message'], True
 
     @classmethod
-    def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = True):
+    def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = False):
         """
         下载分子对接任务结果
         :param task_id: 分子对接任务id
