@@ -57,6 +57,7 @@ class Account(UserMixin, db.Model):
             "initialized_at": self.initialized_at,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "current_tenant_id": self.current_tenant_id,
         }
 
     @property

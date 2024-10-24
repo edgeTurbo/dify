@@ -248,6 +248,16 @@ celery = app.extensions["celery"]
 if app.config.get("TESTING"):
     print("App is running in TESTING mode")
 
+from flask_sock import Sock
+from configs.websocket_config.websocket_handler import websocket_connection
+
+sock = Sock(app)
+
+
+@sock.route('/ws')
+def link_socket(ws):
+    websocket_connection(ws)
+
 
 @app.after_request
 def after_request(response):
@@ -307,12 +317,6 @@ def pool_stat():
     }
 
 
-from configs.websocket_config.websocket_handler import WebSocketHandler
-from flask_socketio import SocketIO
-
-socketio = SocketIO(app)
-
-
 @app.route('/')
 def index():
     """
@@ -323,7 +327,6 @@ def index():
 
 
 if __name__ == "__main__":
-    websocket_handler = WebSocketHandler(socketio)
     # Register WebSocket event handlers
-    socketio.run(app, host='0.0.0.0', port=5001, debug=True, use_reloader=True, log_output=True)
+    app.run(host='0.0.0.0', port=5001, debug=True, use_reloader=True)
     # app.run(host="0.0.0.0", port=5001)

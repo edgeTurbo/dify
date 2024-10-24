@@ -292,6 +292,8 @@ class MolecularDockingService:
 
         if 'error' in result_data:
             return result_data['error'], False
+        if 'message' in result_data:
+            return result_data['message'], False
 
         return result_data['output'], True
 
@@ -418,14 +420,14 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
         {'status': Status.PROCESSING.status})
     db.session.commit()
 
-    SciminerHistoryTask.query.filter_by(task_id=molecular_docking_task.id, user_id=user.id).update(
+    SciminerHistoryTask.query.filter_by(task_id=molecular_docking_task.id, created_by=user.id).update(
         {'status': Status.PROCESSING.status}
     )
     db.session.commit()
 
     calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
         "task_id": molecular_docking_task.id,
-        "status": molecular_docking_task.status
+        "status": Status.PROCESSING.status
     })
 
     # 获取pdb和ligand文件buffer

@@ -25,9 +25,10 @@ class WebsocketInternalSend(Resource):
         channel = request.form.get("channel")
         # 发送websocket消息通知前端任务状态变化
         websocket_handler.send_message_to_user(
-            title=channel,
             uid=user_id,
-            message=json.loads(message),
+            message={
+                channel: json.loads(message)
+            },
         )
         return True, 200
 

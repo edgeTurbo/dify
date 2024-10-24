@@ -369,7 +369,7 @@ def global_docking_celery_task(self, user_dict: dict, out_pose_num: int,
     global_docking_task = GlobalDockingTask(**global_docking_task_dict)
     user = Account(**user_dict)
     # 在sciminer_history_task数据表中更新任务状态为处理中
-    sciminer_history_task = SciminerHistoryTask.query.filter_by(task_id=global_docking_task.id, user_id=user.id).first()
+    sciminer_history_task = SciminerHistoryTask.query.filter_by(task_id=global_docking_task.id, created_by=user.id).first()
     if sciminer_history_task is not None and isinstance(sciminer_history_task, SciminerHistoryTask):
         sciminer_history_task.status = Status.PROCESSING.status
         db.session.commit()
