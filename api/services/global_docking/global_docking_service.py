@@ -243,7 +243,8 @@ class GlobalDockingService:
                 return zip_buffer
             else:
                 try:
-                    range_list = [int(x) for x in _range.split(',')]
+                    range_list = [x for x in _range.split(',')]
+                    print(range_list)
                     # 下载指定结果
                     result_list = json.loads(global_docking_task.result)
 
