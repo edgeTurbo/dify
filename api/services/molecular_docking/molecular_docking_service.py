@@ -320,10 +320,16 @@ class MolecularDockingService:
                 return sdf_content
             else:
                 try:
-                    range_list = [int(x) for x in _range.split(',')]
+                    range_list = [x for x in _range.split(',')]
                     # 下载指定结果
                     result_list = json.loads(molecular_docking_task.result)
-                    filter_result_list = list(map(lambda i: result_list[i], range_list))
+
+                    filter_result_list = []
+                    for __range in range_list:
+                        for result in result_list:
+                            if result['mode'] == __range:
+                                filter_result_list.append(result)
+
                     sdf_content = ""
                     for result in filter_result_list:
                         sdf_content += result['mol'] + "$$$$\n"

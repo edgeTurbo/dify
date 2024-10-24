@@ -246,7 +246,13 @@ class GlobalDockingService:
                     range_list = [int(x) for x in _range.split(',')]
                     # 下载指定结果
                     result_list = json.loads(global_docking_task.result)
-                    filter_result_list = list(map(lambda i: result_list[i], range_list))
+
+                    filter_result_list = []
+                    for __range in range_list:
+                        for result in result_list:
+                            if result['mode'] == __range:
+                                filter_result_list.append(result)
+
                     with zipfile.ZipFile(zip_buffer, 'w') as _zip:
                         for result in filter_result_list:
                             file_name = f"complex{result['mode']}.cif"
