@@ -19,7 +19,7 @@ from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required, cloud_edition_billing_resource_check
 from fields.file_fields import file_fields, upload_config_fields
 from libs.login import login_required
-from services.global_docking.global_docking_file_service import GlobalDockingFileService, GlobalDockingSourceType
+from services.sciminer_services.global_docking.global_docking_file_service import GlobalDockingFileService, GlobalDockingSourceType
 
 
 class GlobalDockingFileApi(Resource):

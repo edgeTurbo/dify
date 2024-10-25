@@ -19,7 +19,7 @@ from models.account import Account
 from models.model import EndUser, UploadFile
 from services.errors.file import FileTooLargeError, UnsupportedFileTypeError
 from services.file_service import UNSTRUCTURED_ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS
-from services.molecular_docking.tool_rendering_2d_structure_service import ToolRendering2DStructureService
+from services.sciminer_services.molecular_docking.tool_rendering_2d_structure_service import ToolRendering2DStructureService
 
 ALLOWED_EXTENSIONS = ["pdb", "cif", "bcif", "mmcif", "mol", "sdf", "mol2", "xyz"]
 

@@ -26,7 +26,6 @@ from commands import register_commands
 from configs import dify_config
 
 # DO NOT REMOVE BELOW
-from events import event_handlers
 from extensions import (
     ext_celery,
     ext_code_based_extension,
@@ -45,8 +44,8 @@ from extensions.ext_login import login_manager
 from libs.passport import PassportService
 
 # TODO: Find a way to avoid importing models here
-from models import account, dataset, model, source, task, tool, tools, web, molecular_docking, sciminer
-from models.sciminer_models import global_docking
+from models import account, dataset, model, source, task, tool, tools, web
+from models.sciminer_models import global_docking, molecular_docking, sciminer
 from services.account_service import AccountService
 
 # DO NOT REMOVE ABOVE

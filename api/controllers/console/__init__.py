@@ -59,7 +59,7 @@ from .tag import tags
 from .workspace import account, load_balancing_config, members, model_providers, models, tool_providers, workspace
 
 # Import molecular docking controllers
-from .molecular_docking import file, task
+from .sciminer_apps.molecular_docking import file, task
 
 # Import global docking controllers
 from .sciminer_apps.global_docking import file, task

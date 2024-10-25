@@ -18,11 +18,11 @@ from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
-from models.molecular_docking import MolecularDockingTask, Status
-from models.sciminer import SciminerHistoryTask
-from services.molecular_docking.tool_center_position_service import ToolCenterPositionService
-from services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
-from services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
+from models.sciminer_models.molecular_docking import MolecularDockingTask, Status
+from models.sciminer_models.sciminer import SciminerHistoryTask
+from services.sciminer_services.molecular_docking.tool_center_position_service import ToolCenterPositionService
+from services.sciminer_services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
+from services.sciminer_services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
 from services.molecular_docking_file_service import MolecularDockingFileService
 
 ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
@@ -327,7 +327,7 @@ class MolecularDockingService:
                     filter_result_list = []
                     for __range in range_list:
                         for result in result_list:
-                            if result['mode'] == __range:
+                            if str(result['mode']) == __range:
                                 filter_result_list.append(result)
 
                     sdf_content = ""

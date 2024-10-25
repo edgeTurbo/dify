@@ -23,8 +23,8 @@ from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
-from models.molecular_docking import Status
-from models.sciminer import SciminerHistoryTask
+from models.sciminer_models.molecular_docking import Status
+from models.sciminer_models.sciminer import SciminerHistoryTask
 from models.sciminer_models.global_docking import GlobalDockingTask
 
 if dify_config.GLOBAL_DOCKING_API_URL == "" or dify_config.GLOBAL_DOCKING_API_URL is None:

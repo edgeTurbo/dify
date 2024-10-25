@@ -1,4 +1,3 @@
-import io
 import uuid
 
 from flask import request, send_file
@@ -6,14 +5,14 @@ from flask_login import current_user
 from flask_restful import Resource, marshal_with
 
 from controllers.console import api
-from controllers.console.molecular_docking.error import (
+from controllers.console.sciminer_apps.molecular_docking.error import (
     IllegalParametersError,
 )
 from controllers.console.setup import setup_required
-from controllers.console.wraps import account_initialization_required, cloud_edition_billing_resource_check
+from controllers.console.wraps import account_initialization_required
 from fields.global_docking_fields import global_docking_task_fields
 from libs.login import login_required
-from services.global_docking.global_docking_service import GlobalDockingService
+from services.sciminer_services.global_docking.global_docking_service import GlobalDockingService
 
 
 class GlobalDockingTaskApi(Resource):
