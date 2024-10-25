@@ -327,7 +327,7 @@ class MolecularDockingService:
                     filter_result_list = []
                     for __range in range_list:
                         for result in result_list:
-                            if str(result['mode']) == __range:
+                            if result['mode'] == __range:
                                 filter_result_list.append(result)
 
                     sdf_content = ""
