@@ -13,7 +13,7 @@ from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required
 from models.account import Account
 from models.model import EndUser
-from models.sciminer import SciminerHistoryTask
+from models.sciminer_models.sciminer import SciminerHistoryTask
 from fields.sciminer.sciminer_fields import history_task_pagination_fields
 
 
@@ -33,10 +33,25 @@ class SciminerHistoryTaskApi(Resource):
         if isinstance(current_user, Account) or isinstance(current_user, EndUser):
             history_tasks_query = SciminerHistoryTask.query.filter_by(created_by=current_user.id)
             history_tasks_query = history_tasks_query.order_by(SciminerHistoryTask.created_at.desc())
-            history_tasks = history_tasks_query.paginate(page=page, per_page=page_size, max_per_page=1000, error_out=False)
-            return history_tasks
+            history_tasks = history_tasks_query.paginate(page=page, per_page=page_size, max_per_page=1000,
+                                                         error_out=False)
+            return history_tasks, 200
         else:
             raise Unauthorized()
 
 
+class SciminerHistoryTaskDetailApi(Resource):
+    """
+    任务历史记录详情API
+    """
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        task_id = request.form.get("task_id")
+        print(current_user.id)
+        return {"message": task_id}, 200
+
+
 api.add_resource(SciminerHistoryTaskApi, "/history_task")
+api.add_resource(SciminerHistoryTaskDetailApi, "/history_task/detail")
