@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Union, Tuple
 
 import click
+from flask_login import current_user
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from werkzeug.datastructures import FileStorage
@@ -44,11 +45,11 @@ class GlobalDockingFileInfo:
         self.current_tenant_id = current_tenant_id
 
 
-
 class GlobalDockingFileService:
 
     @classmethod
-    def upload_file(cls, file: Union[str, FileStorage], source: GlobalDockingSourceType, user: Union[Account, EndUser]) -> list[UploadFile]:
+    def upload_file(cls, file: Union[str, FileStorage], source: GlobalDockingSourceType,
+                    user: Union[Account, EndUser]) -> list[UploadFile]:
         if source == GlobalDockingSourceType.FASTA:
             logging.info(click.style(f"接收到的是fasta字符串，进行文件保存...", fg="green"))
             return cls.save_fasta_file(file, user=user)
@@ -212,7 +213,6 @@ class GlobalDockingFileService:
 
         return upload_file_list
 
-
     @classmethod
     def get_global_docking_file_path(cls, extension: str, user: Union[Account, EndUser]) -> Tuple[str, str]:
         """
@@ -227,3 +227,15 @@ class GlobalDockingFileService:
         else:
             current_tenant_id = user.tenant_id
         return f"upload_files/{current_tenant_id}/global_docking/{date_path}/{str(uuid.uuid4())}.{extension}", current_tenant_id
+
+    @classmethod
+    def get_file_content(cls, file_id: str) -> str:
+        """
+        获取文件内容
+        """
+        upload_file = UploadFile.query.filter_by(id=file_id, created_by=current_user.id).first()
+        if isinstance(upload_file, UploadFile):
+            file_bytes = storage.load_once(upload_file.key)
+            return file_bytes.decode('utf-8')
+        else:
+            raise ValueError("文件查找不到")

@@ -421,11 +421,11 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
     # 因为celery需要序列化之后才能传递到该参数，所以现在的user和molecular_docking_task都是json类型的，需要进行反序列化
     molecular_docking_task = MolecularDockingTask(**molecular_docking_task_dict)
     user = Account(**user_dict)
-    # todo 更新任务状态为正在处理中,后期这个MolecularDockingTask需要删除，使用sciminer_history_task数据表来接管，现在先全部数据表更新
+
     MolecularDockingTask.query.filter_by(id=molecular_docking_task.id, created_by=user.id).update(
         {'status': Status.PROCESSING.status})
     db.session.commit()
-
+    # 在sciminer_history_task数据表中更新任务状态
     SciminerHistoryTask.query.filter_by(task_id=molecular_docking_task.id, created_by=user.id).update(
         {'status': Status.PROCESSING.status}
     )

@@ -68,6 +68,21 @@ class GlobalDockingFileApi(Resource):
         return upload_file_list, 201
 
 
+class GlobalDockingFileReadApi(Resource):
+    """
+    全局对接文件读取接口，根据file_id获取文件内容
+    """
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        file_id = request.args.get("file_id", None)
+        if file_id is None:
+            raise ValueError("maybe file_id is none")
+        file_content = GlobalDockingFileService.get_file_content(file_id)
+        return {"file_content": file_content}, 200
+
+
 # class GetFileApi(Resource):
 #     """
 #     这个路由为什么没有设置需要login_required？
@@ -101,6 +116,7 @@ class GlobalDockingFileApi(Resource):
 
 
 api.add_resource(GlobalDockingFileApi, "/global-docking/files/upload")
+api.add_resource(GlobalDockingFileReadApi, "/global-docking/files/read")
 # api.add_resource(GetFileApi, "/global-docking/files/<uuid:file_id>")
 # api.add_resource(FileSupportTypeApi, "/files/support-type")
 
