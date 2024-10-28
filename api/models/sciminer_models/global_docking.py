@@ -63,7 +63,7 @@ class GlobalDockingTask(db.Model):
         return {
             "id": self.id,
             "fasta_file_id": self.fasta_file_id,
-            "ligand_file_id": self.ligand_file_id,
+            "ligand_file_ids": self.ligand_file_ids,
             "out_pose_num": self.out_pose_num,
             "result": self.result,
             "created_by": self.created_by,

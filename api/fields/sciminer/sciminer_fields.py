@@ -23,7 +23,7 @@ history_task_fields = {
     "label": fields.String,
     "status": fields.String,
     "created_at": DateTimeFormatted,
-    # "updated_at": DateTimeFormatted,
+    "updated_at": DateTimeFormatted,
     "task_type": fields.String,
 }
 

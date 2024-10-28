@@ -23,7 +23,7 @@ from models.sciminer_models.sciminer import SciminerHistoryTask
 from services.sciminer_services.molecular_docking.tool_center_position_service import ToolCenterPositionService
 from services.sciminer_services.molecular_docking.tool_delete_special_ligand_service import ToolDeleteSpecialLigandService
 from services.sciminer_services.molecular_docking.tool_ligand_info_service import ToolLigandInfoService
-from services.molecular_docking_file_service import MolecularDockingFileService
+from services.sciminer_services.sciminer_base_service import SciminerBaseService
 
 ALLOWED_EXTENSIONS = ["pdb", "sdf", "mol"]
 
@@ -41,7 +41,10 @@ if dify_config.INNER_API is None or dify_config.INNER_API_KEY is None:
     )
 
 
-class MolecularDockingService:
+class MolecularDockingService(SciminerBaseService):
+    service_type = "POCKET_DOCKING"
+    task_label = "Pocket docking"
+
     @classmethod
     def start_task(cls, task_name: str, pdb_file_id: str, center_x: float, center_y: float, center_z: float,
                    size_x: float, size_y: float, size_z: float, ligand_file_ids: list[str], out_pose_num: int,
@@ -91,8 +94,8 @@ class MolecularDockingService:
         sciminer_history_task = SciminerHistoryTask(
             task_id=molecular_docking_task.id,
             task_name=task_name,
-            task_type="POCKET_DOCKING",
-            label="Pocket docking",
+            task_type=cls.service_type,
+            label=cls.task_label,
             status=status,
             created_by=user.id,
         )
@@ -171,7 +174,7 @@ class MolecularDockingService:
                     # 3. 在配体信息中，进行部分删除
                     pdb_file_buffer = ToolDeleteSpecialLigandService.remove_ligand(pdb_file_buffer, chain, residue_number)
                     # 4. 将新的pdb文件进行保存
-                    new_pdb_file_file_key, current_tenant_id = MolecularDockingFileService.get_pocket_docking_file_path(
+                    new_pdb_file_file_key, current_tenant_id = cls.get_pocket_docking_file_path(
                         file_name=str(uuid.uuid4()) + "." + pdb_file_buffer.name.split('.')[-1],
                         user=user
                     )
@@ -406,6 +409,26 @@ class MolecularDockingService:
             import traceback
             traceback.print_exc()
             raise ValueError("Download file from url failed: " + str(file_url))
+
+    @classmethod
+    def get_pocket_docking_file_path(cls, file_name: str, user: Union[Account, EndUser]):
+        """
+        获取口袋对接文件保存路径
+        :param file_name: 文件名
+        :param user:     用户
+        :return: 文件路径
+        """
+        date_path = datetime.datetime.now().strftime('%Y/%m/%d')
+        if isinstance(user, Account):
+            current_tenant_id = user.current_tenant_id
+        else:
+            current_tenant_id = user.tenant_id
+        return f"upload_files/{current_tenant_id}/pocket_docking/{date_path}/{file_name}", current_tenant_id
+
+    @classmethod
+    def get_service_result_data(cls, task_id: str, user: Union[Account, EndUser]):
+        data = MolecularDockingTask.query.filter_by(id=task_id, created_by=user.id).first()
+        return data.serialize
 
 
 # acks_late 设置为 True 时，任务的消息确认（acknowledgement）会在任务执行完成后才发送，确保任务在失败或 worker 崩溃时能重新被执行。

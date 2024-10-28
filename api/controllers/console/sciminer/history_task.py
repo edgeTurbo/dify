@@ -11,16 +11,19 @@ from werkzeug.exceptions import Unauthorized
 from controllers.console import api
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required
+from fields.file_fields import file_fields
 from models.account import Account
-from models.model import EndUser
+from models.model import EndUser, UploadFile
 from models.sciminer_models.sciminer import SciminerHistoryTask
 from fields.sciminer.sciminer_fields import history_task_pagination_fields
+from services.sciminer_services import service_classes
 
 
 class SciminerHistoryTaskApi(Resource):
     """
     任务历史记录API
     """
+
     @setup_required
     @login_required
     @account_initialization_required
@@ -44,14 +47,35 @@ class SciminerHistoryTaskDetailApi(Resource):
     """
     任务历史记录详情API
     """
+
     @setup_required
     @login_required
     @account_initialization_required
     def post(self):
-        task_id = request.form.get("task_id")
-        print(current_user.id)
-        return {"message": task_id}, 200
+        task_id = request.json.get("task_id")
+        task_type = request.json.get("task_type")
+        service_class = service_classes.get(task_type)
+        if service_class is None:
+            raise ValueError("Task type not found")
+        data = service_class.get_service_result_data(task_id, current_user)
+        return data, 200
+
+
+class SciminerHistoryTskFileApi(Resource):
+    """
+    获取任务历史记录文件API
+    """
+
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @marshal_with(file_fields)
+    def get(self):
+        file_id = request.args.get("file_id")
+        upload_file = UploadFile.query.filter_by(id=file_id, created_by=current_user.id).first()
+        return upload_file, 200
 
 
 api.add_resource(SciminerHistoryTaskApi, "/history_task")
 api.add_resource(SciminerHistoryTaskDetailApi, "/history_task/detail")
+api.add_resource(SciminerHistoryTskFileApi, "/history_task/file")

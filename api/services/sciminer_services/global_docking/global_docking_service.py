@@ -26,6 +26,7 @@ from models.model import EndUser, UploadFile
 from models.sciminer_models.molecular_docking import Status
 from models.sciminer_models.sciminer import SciminerHistoryTask
 from models.sciminer_models.global_docking import GlobalDockingTask
+from services.sciminer_services.sciminer_base_service import SciminerBaseService
 
 if dify_config.GLOBAL_DOCKING_API_URL == "" or dify_config.GLOBAL_DOCKING_API_URL is None:
     logging.error(
@@ -41,7 +42,10 @@ if dify_config.INNER_API is None or dify_config.INNER_API_KEY is None:
     )
 
 
-class GlobalDockingService:
+class GlobalDockingService(SciminerBaseService):
+    service_type = "GLOBAL_DOCKING"
+    task_label = "Global docking"
+
     @classmethod
     def start_task(cls, task_name: str, fasta_file_id: str, ligand_file_ids: list[str], out_pose_num: int,
                    user: Union[Account, EndUser],
@@ -75,8 +79,8 @@ class GlobalDockingService:
         sciminer_history_task = SciminerHistoryTask(
             task_id=global_docking_task.id,
             task_name=task_name,
-            task_type="GLOBAL_DOCKING",
-            label="Global docking",
+            task_type=cls.service_type,
+            label=cls.task_label,
             status=status,
             created_by=user.id,
         )
@@ -363,6 +367,11 @@ class GlobalDockingService:
             import traceback
             traceback.print_exc()
             raise ValueError("Download file from url failed: " + str(file_url))
+
+    @classmethod
+    def get_service_result_data(cls, task_id: str, user: Union[Account, EndUser]):
+        data = GlobalDockingTask.query.filter_by(id=task_id, created_by=user.id).first()
+        return data.serialize
 
 
 # acks_late 设置为 True 时，任务的消息确认（acknowledgement）会在任务执行完成后才发送，确保任务在失败或 worker 崩溃时能重新被执行。
