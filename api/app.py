@@ -3,7 +3,7 @@ import os
 if os.environ.get("DEBUG", "false").lower() != "true":
     from gevent import monkey
 
-    monkey.patch_all(socket=False)
+    monkey.patch_all()
 
     import grpc.experimental.gevent
 
