@@ -87,16 +87,12 @@ class MolecularDockingTaskResultDownloadApi(Resource):
     def get(self):
         task_id = request.args.get("task_id", default=None, type=str)
         _range = request.args.get("range", default="all", type=str)
-        sdf_content = MolecularDockingService.download_task_result(task_id, _range, current_user)
-        if sdf_content is None:
+        zip_buffer = MolecularDockingService.download_task_result(task_id, _range, current_user)
+        if zip_buffer is None:
             return {"message": "Task not found"}, 500
         else:
-            buffer = io.BytesIO()
-            # 如果是文本内容，进行编码
-            buffer.write(sdf_content.encode('utf-8'))
-            # 重置指针到文件开头
-            buffer.seek(0)
-            return send_file(buffer, as_attachment=True, download_name=f"{task_id}.sdf", mimetype='application/octet-stream')
+            return send_file(zip_buffer, as_attachment=True, download_name=f"{task_id}.zip",
+                             mimetype='application/octet-stream')
 
 
 class MolecularDockingTaskCustomToolsApi(Resource):

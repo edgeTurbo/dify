@@ -213,13 +213,13 @@ class GlobalDockingService(SciminerBaseService):
         return result_data['message'], True
 
     @classmethod
-    def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = False):
+    def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = True):
         """
         下载分子对接任务结果
         :param task_id: 分子对接任务id
         :param _range: 下载文件范围
         :param current_user: 当前用户
-        :param zip_csv_file: 是否要压缩csv文件，默认不压缩
+        :param zip_csv_file: 是否要压缩csv文件，默认压缩
         :return:
         """
         global_docking_task = GlobalDockingTask.query.filter_by(id=task_id, created_by=current_user.id).first()
@@ -248,7 +248,6 @@ class GlobalDockingService(SciminerBaseService):
             else:
                 try:
                     range_list = [x for x in _range.split(',')]
-                    print(range_list)
                     # 下载指定结果
                     result_list = json.loads(global_docking_task.result)
 
