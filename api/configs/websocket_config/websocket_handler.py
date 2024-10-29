@@ -38,7 +38,7 @@ def websocket_connection(ws):
         while True:
             message = ws.receive()
             if message:
-                if message == "ping":
+                if message == '{"ping":""}':
                     ws.send("pong")
             else:
                 break
