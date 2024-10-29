@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import SettingsConfigDict
 
 from configs.deploy import DeploymentConfig
@@ -25,7 +27,7 @@ class DifyConfig(
 ):
     model_config = SettingsConfigDict(
         # read from dotenv format config file
-        env_file=".env",
+        env_file=os.getenv("ENV", ".env"),
         env_file_encoding="utf-8",
         frozen=True,
         # ignore extra attributes
