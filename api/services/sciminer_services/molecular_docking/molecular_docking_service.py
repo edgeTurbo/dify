@@ -292,15 +292,23 @@ class MolecularDockingService(SciminerBaseService):
             'ligand_file': ligand_file_buffer_list[0] if len(ligand_file_buffer_list) == 1 else None
         }
 
-        response = requests.post(dify_config.MOLECULAR_DOCKING_API_URL, files=files, data=docking_params, timeout=120)
-        result_data = response.json()
+        try:
+            response = requests.post(dify_config.MOLECULAR_DOCKING_API_URL, files=files, data=docking_params, timeout=120)
+            result_data = response.json()
 
-        if 'error' in result_data:
-            return result_data['error'], False
-        if 'message' in result_data:
-            return result_data['message'], False
-
-        return result_data['output'], True
+            if 'error' in result_data:
+                return result_data['error'], False
+            if 'message' in result_data:
+                return result_data['message'], False
+            return result_data['output'], True
+        except Exception as e:
+            error_message = str(e)
+            logging.error(
+                click.style(
+                    error_message,
+                    fg='red', bold=True)
+            )
+            return error_message, False
 
     @classmethod
     def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = True):

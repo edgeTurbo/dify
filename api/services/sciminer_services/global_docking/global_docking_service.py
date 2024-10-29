@@ -204,13 +204,22 @@ class GlobalDockingService(SciminerBaseService):
             # "num_modes": out_pose_num,
         }
 
-        response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=360*len(smiles_list))
-        result_data = response.json()
+        try:
+            response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=360*len(smiles_list))
+            result_data = response.json()
 
-        if 'error' in result_data:
-            return result_data['error'], False
+            if 'error' in result_data:
+                return result_data['error'], False
 
-        return result_data['message'], True
+            return result_data['message'], True
+        except Exception as e:
+            error_message = str(e)
+            logging.error(
+                click.style(
+                    error_message,
+                    fg='red', bold=True)
+            )
+            return error_message, False
 
     @classmethod
     def download_task_result(cls, task_id, _range, current_user, zip_csv_file: bool = True):
