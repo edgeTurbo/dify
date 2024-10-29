@@ -1,0 +1,14 @@
+identity:
+  author: sciminer
+  name: global_docking
+  version: 1.0.0
+  label:
+    en_US: Global Docking
+    zh_Hans: 全局对接
+  description:
+    en_US: this is global docking service description
+    zh_Hans: 这是全局对接服务描述
+  icon: icon.svg
+  tags:
+    - global docking
+    - test

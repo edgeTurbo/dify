@@ -1,0 +1,14 @@
+identity:
+  author: sciminer
+  name: molecular_docking
+  version: 1.0.0
+  label:
+    en_US: Pocket Docking
+    zh_Hans: 口袋对接
+  description:
+    en_US: this is pocket docking service description
+    zh_Hans: 这是口袋对接服务描述
+  icon: icon.svg
+  tags:
+    - pocket docking
+    - test
