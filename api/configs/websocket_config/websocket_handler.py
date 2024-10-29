@@ -39,6 +39,8 @@ def websocket_connection(ws):
             message = ws.receive()
             if message:
                 print(f"Received message by client {current_user_id}: {message}")
+                if message == "ping":
+                    ws.send("pong")
             else:
                 break
     finally:

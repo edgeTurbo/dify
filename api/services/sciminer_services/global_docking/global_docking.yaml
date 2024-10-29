@@ -10,5 +10,4 @@ identity:
     zh_Hans: 这是全局对接服务描述
   icon: icon.svg
   tags:
-    - global docking
-    - test
+    - other
