@@ -110,7 +110,6 @@ class SciminerUtilManager(ToolProviderController):
             self.identity.icon,
         )
 
-        print(absolute_path)
         # check if the icon exists
         if not path.exists(absolute_path):
             raise ToolProviderNotFoundError(f"sciminer utility {util_name} icon not found")
