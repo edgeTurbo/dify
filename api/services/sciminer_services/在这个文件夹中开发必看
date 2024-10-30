@@ -1,0 +1,54 @@
+1. 在这个文件夹中进行二次开发的时候，因为__init__.py中定义了相关方法逻辑，用于一个接口动态调用对应服务的任务详情查询接口get_service_result_data，以及
+用于前端查询sciminer服务列表的功能
+2. 所以在开发新的服务时，需要遵循一定的规则：
+
+以ocsr识别服务为例：
+1. 首先在services/sciminer_services/下新建一个文件夹（软件包，包含__init__.py），文件夹名为新服务的名称，如：ocsr
+2. 在ocsr的文件夹中新建一个文件夹_assets，用于存放该服务的图标文件，如icon.svg/icon.png等
+
+3. 在ocsr的文件夹中创建一个yaml文件，名称格式为 {service_name}.yaml，如ocsr.yaml，用于定义该服务的相关信息
+identity:
+  author: sciminer
+  name: global_docking
+  version: 1.0.0
+  label:
+    en_US: Global Docking
+    zh_Hans: 全局对接
+  description:
+    en_US: this is global docking service description
+    zh_Hans: 这是全局对接服务描述
+  icon: icon.svg
+  tags:
+    - other
+
+其中name需要和service_name一致，或者可以理解为和文件夹名一致，在当前示例中，name就是ocsr
+其中icon名称需要和_assets文件夹中的文件名一致，如icon.svg
+其中tags只能在以下value中选择：
+    SEARCH = "search"
+    IMAGE = "image"
+    VIDEOS = "videos"
+    WEATHER = "weather"
+    FINANCE = "finance"
+    DESIGN = "design"
+    TRAVEL = "travel"
+    SOCIAL = "social"
+    NEWS = "news"
+    MEDICAL = "medical"
+    PRODUCTIVITY = "productivity"
+    EDUCATION = "education"
+    BUSINESS = "business"
+    ENTERTAINMENT = "entertainment"
+    UTILITIES = "utilities"
+    OTHER = "other"
+
+
+4. 然后需要创建一个{service_name}_service.py文件，用于定义该服务的具体逻辑，如：ocsr_service.py
+5. 然后在有get_service_result_data方法的类上继承一个基类SciminerBaseService，如：
+class OcsrService(SciminerBaseService):
+    service_type = "OCSR"
+    task_label = "ocsr task"
+    def get_service_result_data(self, task_id: str, user: Union[Account, EndUser]):
+        # 具体的服务逻辑
+
+其中service_type是该服务的类型,建议全部大写，这个用于sciminer_history_task数据表中的task_type字段录入
+    task_label是该服务的任务名称，这个用于sciminer_history_task数据表中的label字段录入，主要是给前端在历史记录页面中展示用的
