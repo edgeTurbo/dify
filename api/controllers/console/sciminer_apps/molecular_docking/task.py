@@ -55,7 +55,7 @@ class MolecularDockingTaskApi(Resource):
 
         molecular_docking_task = MolecularDockingService.start_task(task_name, pdb_file_id, center_x, center_y,
                                                                     center_z, size_x, size_y, size_z, ligand_file_ids,
-                                                                    out_pose_num, chain, residue_number, current_user, start_celery=False)
+                                                                    out_pose_num, chain, residue_number, current_user, start_celery=True)
         return molecular_docking_task, 201
 
 

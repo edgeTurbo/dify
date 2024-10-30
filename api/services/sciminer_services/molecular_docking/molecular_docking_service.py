@@ -254,8 +254,11 @@ class MolecularDockingService(SciminerBaseService):
         if start_celery:
             # 当启动消息队列的时候才进行发送websocket消息
             calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
-                "task_id": molecular_docking_task.id,
-                "status": molecular_docking_task.status
+                "id": molecular_docking_task.id,
+                "task_name": molecular_docking_task.task_name,
+                "result": molecular_docking_task.result,
+                "status": molecular_docking_task.status,
+                "remove_ligand_file": molecular_docking_task.remove_ligand_file.serialize
             })
 
         return molecular_docking_task
@@ -507,10 +510,12 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
         {'status': Status.PROCESSING.status}
     )
     db.session.commit()
-
     calling_websocket_internal_send(channel='molecular_docking', user_id=user.id, message={
-        "task_id": molecular_docking_task.id,
-        "status": Status.PROCESSING.status
+        "id": molecular_docking_task.id,
+        "task_name": molecular_docking_task.task_name,
+        "result": None,
+        "status": Status.PROCESSING.status,
+        "remove_ligand_file": None
     })
 
     # 获取pdb和ligand文件buffer

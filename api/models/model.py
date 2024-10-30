@@ -1266,6 +1266,17 @@ class UploadFile(db.Model):
     used_at = db.Column(db.DateTime, nullable=True)
     hash = db.Column(db.String(255), nullable=True)
 
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "size": self.size,
+            "mime_type": self.mime_type,
+            "created_by": self.created_by,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
 
 class ApiRequest(db.Model):
     __tablename__ = "api_requests"

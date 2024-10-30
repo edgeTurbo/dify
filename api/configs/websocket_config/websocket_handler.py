@@ -1,3 +1,5 @@
+import json
+
 from flask import request
 from werkzeug.exceptions import Unauthorized
 
@@ -17,7 +19,7 @@ def send_message_to_user(uid, message: dict):
     if send_users is not None and len(send_users) != 0:
         try:
             for client in send_users:
-                client.send(message)
+                client.send(json.dumps(message))
             return True
         except Exception as e:
             return False
