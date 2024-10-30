@@ -4,21 +4,19 @@
 @Description : 
 """
 import io
-import mimetypes
 from pathlib import Path
 
 from flask import send_file
 from flask_login import login_required
 from flask_restful import Resource, marshal_with
-from os import path
-
 
 from configs import dify_config
 from controllers.console import api
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required
+from core.model_runtime.utils.encoders import jsonable_encoder
 from core.tools.errors import ToolProviderNotFoundError
-from services.sciminer_services import service_yaml_list, icon_dict
+from services.sciminer_services import sciminer_util_manager_dict, sciminer_util_provider_list, SciminerUtilManager
 
 
 class SciminerToolsApi(Resource):
@@ -30,7 +28,12 @@ class SciminerToolsApi(Resource):
     @login_required
     @account_initialization_required
     def get(self):
-        return service_yaml_list
+        return jsonable_encoder(
+            [
+                provider.to_dict()
+                for provider in sciminer_util_provider_list
+            ]
+        )
 
 
 class SciminerToolsIconApi(Resource):
@@ -40,15 +43,15 @@ class SciminerToolsIconApi(Resource):
 
     @setup_required
     def get(self, util_name):
-        if util_name in icon_dict:
-            icon_path = icon_dict[util_name]
-            if not path.exists(icon_path):
-                raise ToolProviderNotFoundError(f"sciminer utility {util_name} icon not found")
-            mime_type, _ = mimetypes.guess_type(icon_path)
-            mime_type = mime_type or "application/octet-stream"
-            icon_bytes = Path(icon_path).read_bytes()
-            icon_cache_max_age = dify_config.TOOL_ICON_CACHE_MAX_AGE
-            return send_file(io.BytesIO(icon_bytes), mimetype=mime_type, max_age=icon_cache_max_age)
+        if util_name in sciminer_util_manager_dict:
+            sciminer_util_manager = sciminer_util_manager_dict[util_name]
+            if isinstance(sciminer_util_manager, SciminerUtilManager):
+                icon_path, mime_type = sciminer_util_manager.get_util_icon_path(util_name=util_name)
+                icon_bytes = Path(icon_path).read_bytes()
+                icon_cache_max_age = dify_config.TOOL_ICON_CACHE_MAX_AGE
+                return send_file(io.BytesIO(icon_bytes), mimetype=mime_type, max_age=icon_cache_max_age)
+            else:
+                raise ToolProviderNotFoundError(f"sciminer utility {util_name} not found")
         else:
             raise ToolProviderNotFoundError(f"sciminer utility {util_name} icon not found")
 
