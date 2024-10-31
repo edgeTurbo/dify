@@ -5,11 +5,13 @@
 """
 import importlib
 import mimetypes
+import os
 import pkgutil
 from typing import Any, Type
 from os import path
 
 from configs import dify_config
+from core.helper.position_helper import get_position_map, sort_by_position_map
 from core.tools.entities.api_entities import UserToolProvider
 from core.tools.entities.common_entities import I18nObject
 from core.tools.entities.tool_entities import ToolProviderType, ToolProviderCredentials, ToolLabelEnum
@@ -71,6 +73,7 @@ class SciminerUtilManager(ToolProviderController):
             id=self.identity.name,
             author=self.identity.author,
             name=self.identity.name,
+            frontend_url=self.identity.frontend_url,
             description=I18nObject(
                 en_US=self.identity.description.en_US,
                 zh_Hans=self.identity.description.zh_Hans,
@@ -120,6 +123,19 @@ class SciminerUtilManager(ToolProviderController):
 
         return absolute_path, mime_type
 
+    @classmethod
+    def sort_utils(cls, utils_list: list[UserToolProvider]):
+        """
+        排序工具列表
+        """
+        _position = get_position_map(os.path.dirname(__file__))
+
+        def name_func(util: UserToolProvider):
+            return util.name
+
+        sorted_providers = sort_by_position_map(_position, utils_list, name_func)
+        return sorted_providers
+
 
 def generate_service_dict() -> (dict[Any, Type[SciminerBaseService]], dict):
     # 这个是给动态调用服务类用的
@@ -148,10 +164,10 @@ def generate_service_dict() -> (dict[Any, Type[SciminerBaseService]], dict):
                     )
                     _sciminer_util_manager_dict[_sciminer_util_manager.identity.name] = _sciminer_util_manager
 
-                    # todo 这个_sciminer_util_provider_list后面可以添加一个排序功能
                     _sciminer_util_provider_list.append(_sciminer_util_manager.get_user_provider())
 
-    return _service_classes, _sciminer_util_manager_dict, _sciminer_util_provider_list
+    # 排序工具列表
+    return _service_classes, _sciminer_util_manager_dict, SciminerUtilManager.sort_utils(_sciminer_util_provider_list)
 
 
 # 动态生成服务类字典
