@@ -183,29 +183,48 @@ class GlobalDockingService(SciminerBaseService):
         """
 
         protein_content = fasta_file_buffer.read().decode('utf-8')
+        # 及时关闭文件流
+        fasta_file_buffer.close()
 
         smiles_list = []
+        # 用来判断ligand文件中是否有非法分子，如果有的话，则只关闭文件流，不进行其他任何操作
+        error_mol = False
 
         for ligand_file_buffer in ligand_file_buffer_list:
+            if error_mol:
+                # 只释放文件流，不进行其他任何操作
+                ligand_file_buffer.close()
+                continue
             try:
-                supplier = Chem.ForwardSDMolSupplier(ligand_file_buffer)
-                # 遍历分子，提取 SMILES
-                for mol in supplier:
-                    if mol is not None:
-                        smiles = Chem.MolToSmiles(mol)
-                        logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
-                        smiles_list.append(smiles)
-                    else:
-                        logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
+                ligand_file_content = ligand_file_buffer.read().decode('utf-8')
+                # 将sdf中多个分子拆开
+                ligand_mol_list = ligand_file_content.split("$$$$")
+                for ligand_mol in ligand_mol_list:
+                    if ligand_mol.strip() != '':
+                        mol = Chem.MolFromMolBlock(ligand_mol)
+                        if mol is not None:
+                            smiles = Chem.MolToSmiles(mol)
+                            logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
+                            smiles_list.append(smiles)
+                        else:
+                            # 只要有一个非法分子，就不去对接
+                            error_mol = True
+                            smiles_list = []
+                            logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
             except Exception as e:
                 import traceback
                 traceback.print_exc()
+                # 只要有一个非法分子，就不去对接
                 smiles_list = []
+                error_mol = True
                 logging.error(click.style(f"读取分子文件{ligand_file_buffer.name}失败：{e}", fg='red', bold=True))
-                break
+                continue
+            finally:
+                ligand_file_buffer.close()
 
         if len(smiles_list) == 0:
-            raise ValueError("没有可供对接的分子")
+            error_message = "输入的分子非法"
+            return error_message, False
 
         docking_params = {
             "protein_content": protein_content,
