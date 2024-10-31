@@ -163,8 +163,10 @@ class GlobalDockingService(SciminerBaseService):
         if start_celery:
             # 当启动消息队列的时候才进行发送websocket消息
             calling_websocket_internal_send(channel='global_docking', user_id=user.id, message={
-                "task_id": global_docking_task.id,
-                "status": status
+                "id": global_docking_task.id,
+                "task_name": task_name,
+                "result": result,
+                "status": status,
             })
 
         return global_docking_task
@@ -385,7 +387,7 @@ class GlobalDockingService(SciminerBaseService):
 # acks_late 设置为 True 时，任务的消息确认（acknowledgement）会在任务执行完成后才发送，确保任务在失败或 worker 崩溃时能重新被执行。
 # time_limit 设置为 120 秒，任务的执行时间不能超过 120 秒，超过这个时间，任务会被自动取消。
 # bind 如果设置为 True，任务将绑定到当前任务实例（self），从而允许你在任务中访问 self（即任务对象本身）。这在需要访问任务元数据（例如任务ID、重试次数）时非常有用
-@shared_task(queue='global_docking', bind=True, time_limit=120, acks_late=True)
+@shared_task(queue='global_docking', bind=True, time_limit=1200, acks_late=True)
 def global_docking_celery_task(self, user_dict: dict, out_pose_num: int,
                                global_docking_task_dict: dict):
     logging.info(click.style(f"global_docking_celery_task 开始执行，任务ID：{self.request.id}", fg='green'))
@@ -400,7 +402,9 @@ def global_docking_celery_task(self, user_dict: dict, out_pose_num: int,
     # 设置global_docking_task的状态为处理中
     global_docking_task.status = Status.PROCESSING.status
     calling_websocket_internal_send(channel='global_docking', user_id=user.id, message={
-        "task_id": sciminer_history_task.task_id,
+        "id": sciminer_history_task.task_id,
+        "task_name": sciminer_history_task.task_name,
+        "result": None,
         "status": sciminer_history_task.status
     })
 

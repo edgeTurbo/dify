@@ -40,7 +40,7 @@ class GlobalDockingTaskApi(Resource):
 
         global_docking_task = GlobalDockingService.start_task(task_name, fasta_file_id, ligand_file_ids,
                                                               out_pose_num, current_user,
-                                                              start_celery=False)
+                                                              start_celery=True)
         return global_docking_task, 201
 
 
