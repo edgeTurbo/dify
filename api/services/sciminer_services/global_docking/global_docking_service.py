@@ -187,15 +187,22 @@ class GlobalDockingService(SciminerBaseService):
         smiles_list = []
 
         for ligand_file_buffer in ligand_file_buffer_list:
-            supplier = Chem.ForwardSDMolSupplier(ligand_file_buffer)
-            # 遍历分子，提取 SMILES
-            for mol in supplier:
-                if mol is not None:
-                    smiles = Chem.MolToSmiles(mol)
-                    logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
-                    smiles_list.append(smiles)
-                else:
-                    logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
+            try:
+                supplier = Chem.ForwardSDMolSupplier(ligand_file_buffer)
+                # 遍历分子，提取 SMILES
+                for mol in supplier:
+                    if mol is not None:
+                        smiles = Chem.MolToSmiles(mol)
+                        logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
+                        smiles_list.append(smiles)
+                    else:
+                        logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                smiles_list = []
+                logging.error(click.style(f"读取分子文件{ligand_file_buffer.name}失败：{e}", fg='red', bold=True))
+                break
 
         if len(smiles_list) == 0:
             raise ValueError("没有可供对接的分子")
@@ -207,6 +214,9 @@ class GlobalDockingService(SciminerBaseService):
         }
 
         try:
+
+            logging.debug(click.style("1", fg='green'))
+
             response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=360*len(smiles_list))
             result_data = response.json()
 
