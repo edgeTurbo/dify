@@ -1,6 +1,7 @@
 identity:
   author: sciminer
   name: molecular_docking
+  frontend_url: /utility/docking?strategy=pocket
   version: 1.0.0
   label:
     en_US: Pocket Docking
