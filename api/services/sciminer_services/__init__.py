@@ -7,14 +7,14 @@ import importlib
 import mimetypes
 import os
 import pkgutil
-from typing import Any, Type
 from os import path
+from typing import Any, Type
 
 from configs import dify_config
 from core.helper.position_helper import get_position_map, sort_by_position_map
 from core.tools.entities.api_entities import UserToolProvider
 from core.tools.entities.common_entities import I18nObject
-from core.tools.entities.tool_entities import ToolProviderType, ToolProviderCredentials, ToolLabelEnum
+from core.tools.entities.tool_entities import ToolProviderType, ToolLabelEnum
 from core.tools.entities.values import default_tool_label_dict
 from core.tools.errors import ToolProviderNotFoundError
 from core.tools.provider.tool_provider import ToolProviderController
