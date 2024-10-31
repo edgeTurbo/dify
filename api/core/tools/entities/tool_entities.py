@@ -207,6 +207,7 @@ class ToolProviderIdentity(BaseModel):
         default=[],
         description="The tags of the tool",
     )
+    frontend_url: Optional[str] = Field(None, description="The frontend url of the tool")
 
 
 class ToolDescription(BaseModel):

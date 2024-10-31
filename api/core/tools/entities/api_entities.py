@@ -34,6 +34,7 @@ class UserToolProvider(BaseModel):
     allow_delete: bool = True
     tools: list[UserTool] = None
     labels: list[str] = None
+    frontend_url: str = None
 
     def to_dict(self) -> dict:
         # -------------
@@ -59,6 +60,7 @@ class UserToolProvider(BaseModel):
             "allow_delete": self.allow_delete,
             "tools": tools,
             "labels": self.labels,
+            "frontend_url": self.frontend_url,
         }
 
 
