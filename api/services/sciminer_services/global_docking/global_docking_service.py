@@ -233,9 +233,6 @@ class GlobalDockingService(SciminerBaseService):
         }
 
         try:
-
-            logging.debug(click.style("1", fg='green'))
-
             response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=360*len(smiles_list))
             result_data = response.json()
 
