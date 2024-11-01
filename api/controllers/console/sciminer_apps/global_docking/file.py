@@ -17,6 +17,7 @@ from controllers.console.datasets.error import (
 )
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required, cloud_edition_billing_resource_check
+from core.tools.utils.upload_file_utils import UploadFileUtils
 from fields.file_fields import file_fields, upload_config_fields
 from libs.login import login_required
 from services.sciminer_services.global_docking.global_docking_file_service import GlobalDockingFileService, GlobalDockingSourceType
@@ -79,7 +80,7 @@ class GlobalDockingFileReadApi(Resource):
         file_id = request.args.get("file_id", None)
         if file_id is None:
             raise ValueError("maybe file_id is none")
-        file_content = GlobalDockingFileService.get_file_content(file_id)
+        file_content = UploadFileUtils.get_upload_file_content_by_id(file_id, current_user.id)
         return {"file_content": file_content}, 200
 
 

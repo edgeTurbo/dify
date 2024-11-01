@@ -1275,7 +1275,7 @@ class UploadFile(db.Model):
             "extension": self.extension,
             "mime_type": self.mime_type,
             "created_by": self.created_by,
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
         }
 
 

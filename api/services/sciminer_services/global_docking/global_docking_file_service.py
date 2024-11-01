@@ -4,24 +4,22 @@
 @Description : 全局对接的文件服务
 """
 import io
+import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Union, Tuple
 
 import click
-from flask_login import current_user
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from werkzeug.datastructures import FileStorage
 
 from configs import dify_config
-from extensions.ext_database import db
+from core.tools.utils.upload_file_utils import UploadFileUtils
 from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
-import logging
-
 from services.errors.file import UnsupportedFileTypeError
 
 ALLOWED_EXTENSIONS = ['fasta']
@@ -79,7 +77,7 @@ class GlobalDockingFileService:
 
         storage.save(file_key, file_content)
         # save file to database
-        upload_file = UploadFile(
+        upload_file = UploadFileUtils.add_upload_file(
             tenant_id=current_tenant_id,
             storage_type=dify_config.STORAGE_TYPE,
             key=file_key,
@@ -88,11 +86,8 @@ class GlobalDockingFileService:
             extension=extension,
             mime_type=mimetype,
             created_by=user.id,
-            created_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
 
-        db.session.add(upload_file)
-        db.session.commit()
         return [upload_file, ]
 
     @classmethod
@@ -195,7 +190,7 @@ class GlobalDockingFileService:
         for file_info in global_docking_file_info_list:
             storage.save(file_info.file_key, file_info.file_content)
             # save file to database
-            upload_file = UploadFile(
+            upload_file = UploadFileUtils.add_upload_file(
                 tenant_id=file_info.current_tenant_id,
                 storage_type=dify_config.STORAGE_TYPE,
                 key=file_info.file_key,
@@ -204,11 +199,8 @@ class GlobalDockingFileService:
                 extension=file_info.extension,
                 mime_type=mimetype,
                 created_by=user.id,
-                created_at=datetime.now(timezone.utc).replace(tzinfo=None),
             )
 
-            db.session.add(upload_file)
-            db.session.commit()
             upload_file_list.append(upload_file)
 
         return upload_file_list
@@ -227,15 +219,3 @@ class GlobalDockingFileService:
         else:
             current_tenant_id = user.tenant_id
         return f"upload_files/{current_tenant_id}/global_docking/{date_path}/{str(uuid.uuid4())}.{extension}", current_tenant_id
-
-    @classmethod
-    def get_file_content(cls, file_id: str) -> str:
-        """
-        获取文件内容
-        """
-        upload_file = UploadFile.query.filter_by(id=file_id, created_by=current_user.id).first()
-        if isinstance(upload_file, UploadFile):
-            file_bytes = storage.load_once(upload_file.key)
-            return file_bytes.decode('utf-8')
-        else:
-            raise ValueError("文件查找不到")
