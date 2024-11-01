@@ -80,18 +80,7 @@ class RenderingMoleculeFileApi(Resource):
         return MolecularDockingFileService.rendering_molecule_file(file_id, current_user), 200
 
 
-# class FileSupportTypeApi(Resource):
-#     @setup_required
-#     @login_required
-#     @account_initialization_required
-#     def get(self):
-#         etl_type = dify_config.ETL_TYPE
-#         allowed_extensions = UNSTRUCTURED_ALLOWED_EXTENSIONS if etl_type == "Unstructured" else ALLOWED_EXTENSIONS
-#         return {"allowed_extensions": allowed_extensions}
-
-
 api.add_resource(MolecularDockingFileApi, "/molecular-docking/files/upload")
 api.add_resource(GetFileApi, "/molecular-docking/files/<uuid:file_id>")
-# api.add_resource(FileSupportTypeApi, "/files/support-type")
 
 api.add_resource(RenderingMoleculeFileApi, "/molecular-docking/files/rendering")
