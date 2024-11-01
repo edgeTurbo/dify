@@ -196,21 +196,18 @@ class GlobalDockingService(SciminerBaseService):
                 ligand_file_buffer.close()
                 continue
             try:
-                ligand_file_content = ligand_file_buffer.read().decode('utf-8')
-                # 将sdf中多个分子拆开
-                ligand_mol_list = ligand_file_content.split("$$$$")
-                for ligand_mol in ligand_mol_list:
-                    if ligand_mol.strip() != '':
-                        mol = Chem.MolFromMolBlock(ligand_mol)
-                        if mol is not None:
-                            smiles = Chem.MolToSmiles(mol)
-                            logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
-                            smiles_list.append(smiles)
-                        else:
-                            # 只要有一个非法分子，就不去对接
-                            error_mol = True
-                            smiles_list = []
-                            logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
+                supplier = Chem.ForwardSDMolSupplier(ligand_file_buffer)
+                # 遍历分子，提取 SMILES
+                for mol in supplier:
+                    if mol is not None:
+                        smiles = Chem.MolToSmiles(mol)
+                        logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中的分子：{smiles}", fg='green'))
+                        smiles_list.append(smiles)
+                    else:
+                        # 只要有一个非法分子，就不去对接
+                        error_mol = True
+                        smiles_list = []
+                        logging.debug(click.style(f"分子文件{ligand_file_buffer.name}中没有分子", fg='red'))
             except Exception as e:
                 import traceback
                 traceback.print_exc()
