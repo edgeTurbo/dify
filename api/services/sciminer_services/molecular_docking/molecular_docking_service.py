@@ -16,6 +16,7 @@ from celery import shared_task
 
 from configs import dify_config
 from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
+from core.tools.utils.upload_file_utils import UploadFileUtils
 from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
@@ -112,8 +113,8 @@ class MolecularDockingService(SciminerBaseService):
             )
             return molecular_docking_task
         else:
-            pdb_file_buffer = cls.get_upload_file_buffer(pdb_file_id, user)
-            ligand_file_buffer_list = cls.get_upload_file_buffer(ligand_file_ids, user, return_list=True)
+            pdb_file_buffer = UploadFileUtils.get_upload_file_buffer(pdb_file_id, user)
+            ligand_file_buffer_list = UploadFileUtils.get_upload_file_buffer(ligand_file_ids, user, return_list=True)
             return cls.main_processor(user, task_name, pdb_file_buffer, ligand_file_buffer_list, center_x, center_y,
                                       center_z,
                                       size_x, size_y, size_z, out_pose_num, chain, residue_number,
@@ -130,26 +131,6 @@ class MolecularDockingService(SciminerBaseService):
         upload_file = UploadFile.query.filter_by(id=pdb_file_id, created_by=user.id).first()
         file_bytes = storage.load_once(upload_file.key)
         return ToolCenterPositionService.get_box_center(file_bytes)
-
-    @classmethod
-    def get_upload_file_buffer(cls, upload_file_ids: Union[str, list[str]], user: Union[Account, EndUser],
-                               return_list: bool = False) -> Union[BufferedReader, list[BufferedReader]]:
-        """
-        Get upload file buffer.
-        :param upload_file_ids: upload file ids
-        :param user: user
-        :param return_list: 是否返回数组形式
-        :return: pdb file buffer
-        """
-        if return_list:
-            upload_file_buffer_list = []
-            for upload_file_id in upload_file_ids:
-                upload_file = UploadFile.query.filter_by(id=upload_file_id, created_by=user.id).first()
-                upload_file_buffer_list.append(storage.load_buffer(upload_file.key, upload_file.name))
-            return upload_file_buffer_list
-        else:
-            upload_file = UploadFile.query.filter_by(id=upload_file_ids, created_by=user.id).first()
-            return storage.load_buffer(upload_file.key, upload_file.name)
 
     @classmethod
     def main_processor(cls, user: Union[Account, EndUser], task_name: str, pdb_file_buffer: BufferedReader,
@@ -519,8 +500,8 @@ def molecular_docking_celery_task(self, user_dict: dict, center_x: float, center
     })
 
     # 获取pdb和ligand文件buffer
-    pdb_file_buffer = MolecularDockingService.get_upload_file_buffer(molecular_docking_task.pdb_file_id, user)
-    ligand_file_buffer_list = MolecularDockingService.get_upload_file_buffer(
+    pdb_file_buffer = UploadFileUtils.get_upload_file_buffer(molecular_docking_task.pdb_file_id, user)
+    ligand_file_buffer_list = UploadFileUtils.get_upload_file_buffer(
         molecular_docking_task.ligand_file_ids, user, return_list=True)
     MolecularDockingService.main_processor(
         user,

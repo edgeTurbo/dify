@@ -19,6 +19,7 @@ from rdkit import Chem
 
 from configs import dify_config
 from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
+from core.tools.utils.upload_file_utils import UploadFileUtils
 from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.account import Account
@@ -94,30 +95,10 @@ class GlobalDockingService(SciminerBaseService):
             )
             return global_docking_task
         else:
-            fasta_file_buffer = cls.get_upload_file_buffer(fasta_file_id, user)
-            ligand_file_buffer_list = cls.get_upload_file_buffer(ligand_file_ids, user, return_list=True)
+            fasta_file_buffer = UploadFileUtils.get_upload_file_buffer(fasta_file_id, user)
+            ligand_file_buffer_list = UploadFileUtils.get_upload_file_buffer(ligand_file_ids, user, return_list=True)
             return cls.main_processor(user, task_name, fasta_file_buffer, ligand_file_buffer_list, out_pose_num,
                                       global_docking_task, start_celery)
-
-    @classmethod
-    def get_upload_file_buffer(cls, upload_file_ids: Union[str, list[str]], user: Union[Account, EndUser],
-                               return_list: bool = False) -> Union[BufferedReader, list[BufferedReader]]:
-        """
-        Get upload file buffer.
-        :param upload_file_ids: upload file ids
-        :param user: user
-        :param return_list: 是否返回数组形式
-        :return: pdb file buffer
-        """
-        if return_list:
-            upload_file_buffer_list = []
-            for upload_file_id in upload_file_ids:
-                upload_file = UploadFile.query.filter_by(id=upload_file_id, created_by=user.id).first()
-                upload_file_buffer_list.append(storage.load_buffer(upload_file.key, upload_file.name))
-            return upload_file_buffer_list
-        else:
-            upload_file = UploadFile.query.filter_by(id=upload_file_ids, created_by=user.id).first()
-            return storage.load_buffer(upload_file.key, upload_file.name)
 
     @classmethod
     def main_processor(cls, user: Union[Account, EndUser], task_name: str, fasta_file_buffer: BufferedReader,
@@ -432,8 +413,8 @@ def global_docking_celery_task(self, user_dict: dict, out_pose_num: int,
     })
 
     # 获取fasta文件和ligand文件buffer
-    fasta_file_buffer = GlobalDockingService.get_upload_file_buffer(global_docking_task.fasta_file_id, user)
-    ligand_file_buffer_list = GlobalDockingService.get_upload_file_buffer(
+    fasta_file_buffer = UploadFileUtils.get_upload_file_buffer(global_docking_task.fasta_file_id, user)
+    ligand_file_buffer_list = UploadFileUtils.get_upload_file_buffer(
         global_docking_task.ligand_file_ids, user, return_list=True)
     GlobalDockingService.main_processor(
         user,

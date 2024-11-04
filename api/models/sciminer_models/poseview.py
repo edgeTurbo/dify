@@ -29,6 +29,8 @@ class PoseViewTask(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"),
                            onupdate=db.text("CURRENT_TIMESTAMP(0)"), comment="更新时间")
 
+    status = None
+
     @property
     def serialize(self):
         return {
