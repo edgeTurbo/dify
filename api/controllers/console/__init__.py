@@ -64,5 +64,8 @@ from .sciminer_apps.molecular_docking import file, task
 # Import global docking controllers
 from .sciminer_apps.global_docking import file, task
 
+# Import poseview controllers
+from .sciminer_apps.poseview import file
+
 # Import sciminer controllers
 from .sciminer import history_task, tools

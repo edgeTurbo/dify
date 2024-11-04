@@ -1,0 +1,14 @@
+identity:
+  author: sciminer
+  name: poseview
+  frontend_url: /utility/poseview
+  version: 1.0.0
+  label:
+    en_US: Pose View
+    zh_Hans: 2D相互作用图
+  description:
+    en_US: this is pose view service description
+    zh_Hans: 这是2D相互作用图服务描述
+  icon: icon.svg
+  tags:
+    - other

@@ -107,3 +107,9 @@ class UnsupportedFileTypeError(BaseHTTPException):
     error_code = "unsupported_file_type"
     description = "File type not allowed."
     code = 415
+
+
+class InvalidFileTypeError(BaseHTTPException):
+    error_code = "invalid_source_type"
+    description = "Invalid source type."
+    code = 416
