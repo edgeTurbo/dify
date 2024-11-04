@@ -3,9 +3,12 @@
 @Author  : bigboss
 @Description : 针对数据表upload_files的各个操作工具类
 """
+from typing import Union
+
 from extensions.ext_database import db
 from extensions.ext_storage import storage
 from models.model import UploadFile
+from services.errors.file import UnsupportedFileTypeError
 
 
 class UploadFileUtils(UploadFile):
@@ -37,7 +40,7 @@ class UploadFileUtils(UploadFile):
             raise ValueError("文件读取失败")
 
     @classmethod
-    def add_upload_file(cls, **data) -> UploadFile:
+    def add_upload_file_to_db(cls, **data) -> UploadFile:
         """
         新增上传文件到upload_files表中
         :param data: 上传文件数据
@@ -47,3 +50,19 @@ class UploadFileUtils(UploadFile):
         db.session.add(upload_file)
         db.session.commit()
         return upload_file
+
+    @classmethod
+    def upload_file_to_storage(cls, file_key: str, file_content,
+                               extension: str = None,
+                               allowed_extensions: list[str] = None) -> None:
+        """
+        将上传文件上传到云存储中
+        :param extension: 文件后缀名
+        :param file_key: 上传文件key路径
+        :param file_content: 上传文件数据
+        :param allowed_extensions: 允许的上传文件类型
+        :return: None
+        """
+        if allowed_extensions is not None and extension not in allowed_extensions:
+            raise UnsupportedFileTypeError()
+        storage.save(file_key, file_content)

@@ -44,22 +44,12 @@ class MolecularDockingFileService:
     def upload_file(file: FileStorage, user: Union[Account, EndUser]) -> UploadFile:
         filename = file.filename
         extension = file.filename.split(".")[-1]
-        if len(filename) > 200:
-            filename = filename.split(".")[0][:200] + "." + extension
-        if extension.lower() not in ALLOWED_EXTENSIONS:
-            raise UnsupportedFileTypeError()
-        else:
-            file_size_limit = dify_config.UPLOAD_FILE_SIZE_LIMIT * 1024 * 1024
 
         # read file content
         file_content = file.read()
 
         # get file size
         file_size = len(file_content)
-
-        if file_size > file_size_limit:
-            message = f"File size exceeded. {file_size} > {file_size_limit}"
-            raise FileTooLargeError(message)
 
         # user uuid as file name
         file_uuid = str(uuid.uuid4())
@@ -69,11 +59,15 @@ class MolecularDockingFileService:
             user=user
         )
 
-        # save file to storage
-        storage.save(file_key, file_content)
+        UploadFileUtils.upload_file_to_storage(
+            file_key=file_key,
+            file_content=file_content,
+            extension=extension,
+            allowed_extensions=ALLOWED_EXTENSIONS
+        )
 
         # save file to db
-        upload_file = UploadFileUtils.add_upload_file(
+        upload_file = UploadFileUtils.add_upload_file_to_db(
             tenant_id=current_tenant_id,
             storage_type=dify_config.STORAGE_TYPE,
             key=file_key,

@@ -69,15 +69,16 @@ class GlobalDockingFileService:
             file_size = len(file_content)
             mimetype = file.mimetype
 
-        extension = file_name.split('.')[-1]
-        if extension.lower() not in ALLOWED_EXTENSIONS:
-            raise UnsupportedFileTypeError()
+        file_key, current_tenant_id, extension = cls.get_global_docking_file_key(file_name, user)
 
-        file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
-
-        storage.save(file_key, file_content)
+        UploadFileUtils.upload_file_to_storage(
+            file_key=file_key,
+            file_content=file_content,
+            extension=extension,
+            allowed_extensions=ALLOWED_EXTENSIONS
+        )
         # save file to database
-        upload_file = UploadFileUtils.add_upload_file(
+        upload_file = UploadFileUtils.add_upload_file_to_db(
             tenant_id=current_tenant_id,
             storage_type=dify_config.STORAGE_TYPE,
             key=file_key,
@@ -129,9 +130,7 @@ class GlobalDockingFileService:
             file_size = len(file_content)
             sdf_block.close()
 
-            extension = file_name.split('.')[-1]
-
-            file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
+            file_key, current_tenant_id, extension = cls.get_global_docking_file_key(file_name, user)
 
             file_info = GlobalDockingFileInfo(
                 file_name=file_name,
@@ -144,10 +143,7 @@ class GlobalDockingFileService:
             )
             global_docking_file_info_list.append(file_info)
         else:
-            if file.filename.split('.')[-1] not in ALLOWED_LIGAND_EXTENSIONS:
-                raise UnsupportedFileTypeError()
             file_content_list = file.read().decode('utf-8').split('\n')
-
             file_name = f"{str(uuid.uuid4())}.sdf"
             # 使用 io.StringIO 作为内存中的文件
             sdf_block = io.StringIO()
@@ -170,9 +166,7 @@ class GlobalDockingFileService:
             file_size = len(file_content)
             sdf_block.close()
 
-            extension = file_name.split('.')[-1]
-
-            file_key, current_tenant_id = cls.get_global_docking_file_path(extension, user)
+            file_key, current_tenant_id, extension = cls.get_global_docking_file_key(file_name, user)
 
             file_info = GlobalDockingFileInfo(
                 file_name=file_name,
@@ -190,7 +184,7 @@ class GlobalDockingFileService:
         for file_info in global_docking_file_info_list:
             storage.save(file_info.file_key, file_info.file_content)
             # save file to database
-            upload_file = UploadFileUtils.add_upload_file(
+            upload_file = UploadFileUtils.add_upload_file_to_db(
                 tenant_id=file_info.current_tenant_id,
                 storage_type=dify_config.STORAGE_TYPE,
                 key=file_info.file_key,
@@ -206,16 +200,17 @@ class GlobalDockingFileService:
         return upload_file_list
 
     @classmethod
-    def get_global_docking_file_path(cls, extension: str, user: Union[Account, EndUser]) -> Tuple[str, str]:
+    def get_global_docking_file_key(cls, file_name: str, user: Union[Account, EndUser]) -> Tuple[str, str, str]:
         """
         获取全局对接文件保存路径
-        :param extension: 文件后缀名
+        :param file_name: 文件名
         :param user:     用户
         :return: 文件路径
         """
+        extension = file_name.split('.')[-1]
         date_path = datetime.now().strftime('%Y/%m/%d')
         if isinstance(user, Account):
             current_tenant_id = user.current_tenant_id
         else:
             current_tenant_id = user.tenant_id
-        return f"upload_files/{current_tenant_id}/global_docking/{date_path}/{str(uuid.uuid4())}.{extension}", current_tenant_id
+        return f"upload_files/{current_tenant_id}/global_docking/{date_path}/{str(uuid.uuid4())}.{extension}", current_tenant_id, extension
