@@ -1,7 +1,7 @@
 """
 @Time    : 2024/11/4 上午10:14
 @Author  : bigboss
-@Description : 
+@Description : poseview 文件上传接口
 """
 from flask import request
 from flask_login import login_required, current_user

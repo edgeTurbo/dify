@@ -5,7 +5,7 @@ from flask_login import current_user
 from flask_restful import Resource, marshal_with
 
 from controllers.console import api
-from controllers.console.sciminer_apps.molecular_docking.error import (
+from controllers.console.sciminer_apps.error import (
     IllegalParametersError,
 )
 from controllers.console.setup import setup_required

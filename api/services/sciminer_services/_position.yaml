@@ -1,3 +1,5 @@
-# 这个是定义sciminer services的前端显示顺序
+# 这个是定义sciminer services的前端显示顺序,这边的名字是根据每个
+# 服务的yaml文件中的name来进行排序的
 - molecular_docking
 - global_docking
+- poseview
