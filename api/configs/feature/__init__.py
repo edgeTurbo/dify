@@ -612,6 +612,17 @@ class GlobalDockingConfig(BaseSettings):
     )
 
 
+class PoseViewConfig(BaseSettings):
+    POSEVIEW_TASK_API_URL: str = Field(
+        description="PoseView task API URL",
+        default=None,
+    )
+    POSEVIEW_RESULT_API_URL: str = Field(
+        description="PoseView result API URL",
+        default=None,
+    )
+
+
 class FeatureConfig(
     # place the configs in alphabet order
     AppExecutionConfig,
@@ -642,5 +653,6 @@ class FeatureConfig(
     CeleryBeatConfig,
     MolecularDockingConfig,
     GlobalDockingConfig,
+    PoseViewConfig,
 ):
     pass
