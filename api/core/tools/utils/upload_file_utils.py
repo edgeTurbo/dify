@@ -13,6 +13,13 @@ from models.model import UploadFile, EndUser
 from services.errors.file import UnsupportedFileTypeError
 
 
+class UploadFileProperty:
+    def __init__(self, file_name: str, file_bytes: bytes, extension: str):
+        self.file_name = file_name
+        self.file_bytes = file_bytes
+        self.extension = extension
+
+
 class UploadFileUtils(UploadFile):
     @classmethod
     def get_upload_file_content_by_id(cls, upload_file_id: str, user_id: str = None) -> str:
@@ -70,13 +77,14 @@ class UploadFileUtils(UploadFile):
         storage.save(file_key, file_content)
 
     @classmethod
-    def get_upload_file_buffer(cls, upload_file_ids: Union[str, list[str]], user: Union[Account, EndUser], return_list: bool = False) -> Union[BufferedReader, list[BufferedReader]]:
+    def get_upload_file_buffer(cls, upload_file_ids: Union[str, list[str]], user: Union[Account, EndUser],
+                               return_list: bool = False) -> Union[BufferedReader, list[BufferedReader]]:
         """
-        根据upload_file_id获取upload_file的buffer内容，用于提取图片等二进制文件内容
+        根据upload_file_id获取upload_file的BufferedReader内容，用于提取图片等二进制文件内容
         :param upload_file_ids: 上传文件id
         :param user: 用户
         :param return_list: 是否返回list
-        :return: bytes or list of bytes
+        :return: BufferedReader or list of BufferedReader
         """
         if return_list:
             upload_file_buffer_list = []
@@ -87,3 +95,26 @@ class UploadFileUtils(UploadFile):
         else:
             upload_file = UploadFile.query.filter_by(id=upload_file_ids, created_by=user.id).first()
             return storage.load_buffer(upload_file.key, upload_file.name)
+
+    @classmethod
+    def get_upload_file_bytes(cls, upload_file_ids: Union[str, list[str]], user: Union[Account, EndUser],
+                              return_list: bool = False) -> Union[UploadFileProperty, list[UploadFileProperty]]:
+        """
+        根据upload_file_id获取upload_file的bytes内容，用于提取图片等二进制文件内容
+        :param upload_file_ids: 上传文件id
+        :param user: 用户
+        :param return_list: 是否返回list
+        :return: bytes or list of bytes
+        """
+        if return_list:
+            upload_file_property_list = []
+            for upload_file_id in upload_file_ids:
+                upload_file = UploadFile.query.filter_by(id=upload_file_id, created_by=user.id).first()
+                upload_file_property = UploadFileProperty(upload_file.name, storage.load_once(upload_file.key), upload_file.extension)
+                upload_file_property_list.append(upload_file_property)
+            return upload_file_property_list
+        else:
+            upload_file = UploadFile.query.filter_by(id=upload_file_ids, created_by=user.id).first()
+            upload_file_property = UploadFileProperty(upload_file.name, storage.load_once(upload_file.key),
+                                                      upload_file.extension)
+            return upload_file_property

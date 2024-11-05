@@ -53,7 +53,7 @@ class PoseViewFileService:
         elif source_type == PoseViewSourceType.LIGAND:
             UploadFileUtils.upload_file_to_storage(
                 file_key=file_key,
-                file_content=file.read(),
+                file_content=file_content,
                 extension=lower_file_extension,
                 allowed_extensions=cls.ALLOWED_LIGAND_EXTENSIONS
             )
