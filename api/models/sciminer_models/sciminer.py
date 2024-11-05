@@ -49,3 +49,42 @@ class SciminerHistoryTask(db.Model):
                            comment="创建时间")
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"),
                            onupdate=db.text("CURRENT_TIMESTAMP(0)"), comment="更新时间")
+
+
+class ResultFiles(db.Model):
+    """sciminer的工具调用产生的结果文件"""
+    __tablename__ = "result_files"
+    __table_args__ = (
+        db.PrimaryKeyConstraint("id", name="result_file_pkey"),
+        db.Index("result_file_tenant_idx", "tenant_id"),
+    )
+
+    id = db.Column(StringUUID, server_default=db.text("uuid_generate_v4()"))
+    tenant_id = db.Column(StringUUID, nullable=False)
+    storage_type = db.Column(db.String(255), nullable=False)
+    key = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    size = db.Column(db.Integer, nullable=False)
+    extension = db.Column(db.String(255), nullable=False)
+    mime_type = db.Column(db.String(255), nullable=True)
+    created_by_role = db.Column(db.String(255), nullable=False, server_default=db.text("'account'::character varying"))
+    created_by = db.Column(StringUUID, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP(0)"))
+    used = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+    used_by = db.Column(StringUUID, nullable=True)
+    used_at = db.Column(db.DateTime, nullable=True)
+    hash = db.Column(db.String(255), nullable=True)
+    source = db.Column(db.String(200), nullable=True)
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "size": self.size,
+            "extension": self.extension,
+            "mime_type": self.mime_type,
+            "created_by": self.created_by,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "source": self.source,
+        }
