@@ -209,6 +209,11 @@ class ToolProviderIdentity(BaseModel):
     )
     frontend_url: Optional[str] = Field(None, description="The frontend url of the tool")
 
+    @field_validator("author", mode="before")
+    @classmethod
+    def set_default_author(cls, v):
+        return v or ""
+
 
 class ToolDescription(BaseModel):
     human: I18nObject = Field(..., description="The description presented to the user")
