@@ -17,6 +17,7 @@ from controllers.console.wraps import account_initialization_required
 from core.model_runtime.utils.encoders import jsonable_encoder
 from core.tools.errors import ToolProviderNotFoundError
 from services.sciminer_services import sciminer_util_manager_dict, sciminer_util_provider_list, SciminerUtilManager
+from core.sciminer_utility.entities.values import default_utility_labels
 
 
 class SciminerToolsApi(Resource):
@@ -56,5 +57,15 @@ class SciminerToolsIconApi(Resource):
             raise ToolProviderNotFoundError(f"sciminer utility {util_name} icon not found")
 
 
+class SciminerToolLabelsApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        return jsonable_encoder(default_utility_labels)
+
+
 api.add_resource(SciminerToolsApi, '/sciminer/tools')
 api.add_resource(SciminerToolsIconApi, "/sciminer/utils/<util_name>/icon")
+
+api.add_resource(SciminerToolLabelsApi, "/sciminer/util-labels")

@@ -12,6 +12,8 @@ from typing import Any, Type
 
 from configs import dify_config
 from core.helper.position_helper import get_position_map, sort_by_position_map
+from core.sciminer_utility.entities.utility_entities import UtilityLabelEnum
+from core.sciminer_utility.entities.values import default_utility_label_dict
 from core.tools.entities.api_entities import UserToolProvider
 from core.tools.entities.common_entities import I18nObject
 from core.tools.entities.tool_entities import ToolProviderType, ToolLabelEnum
@@ -59,7 +61,15 @@ class SciminerUtilManager(ToolProviderController):
         :return: labels of the provider
         """
         label_enums = self._get_tool_labels()
-        return [default_tool_label_dict[label].name for label in label_enums]
+
+        new_label_enums = []
+        for label in label_enums:
+            if isinstance(label, ToolLabelEnum):
+                new_label_enums.append(default_tool_label_dict[label].name)
+            elif isinstance(label, UtilityLabelEnum):
+                new_label_enums.append(default_utility_label_dict[label].name)
+
+        return new_label_enums
 
     def _get_tool_labels(self) -> list[ToolLabelEnum]:
         """

@@ -11,4 +11,4 @@ identity:
     zh_Hans: 对蛋白质整个表面进行对接，探索所有可能的结合位点，适合在未确定具体结合位点的情况下寻找新作用区域
   icon: icon.svg
   tags:
-    - other
+    - molecular_docking

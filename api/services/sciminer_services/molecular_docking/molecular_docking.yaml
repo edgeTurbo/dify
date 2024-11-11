@@ -11,4 +11,4 @@ identity:
     zh_Hans: 将分子对接限定在蛋白质的已知活性口袋中，以提高计算精度和效率，适合已知结合位点的药物筛选
   icon: icon.svg
   tags:
-    - other
+    - molecular_docking

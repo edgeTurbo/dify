@@ -3,6 +3,7 @@ from typing import Any, Optional, Union, cast
 
 from pydantic import BaseModel, Field, field_validator
 
+from core.sciminer_utility.entities.utility_entities import UtilityLabelEnum
 from core.tools.entities.common_entities import I18nObject
 
 
@@ -203,7 +204,7 @@ class ToolProviderIdentity(BaseModel):
     description: I18nObject = Field(..., description="The description of the tool")
     icon: str = Field(..., description="The icon of the tool")
     label: I18nObject = Field(..., description="The label of the tool")
-    tags: Optional[list[ToolLabelEnum]] = Field(
+    tags: Optional[Union[list[ToolLabelEnum], list[UtilityLabelEnum]]] = Field(
         default=[],
         description="The tags of the tool",
     )
