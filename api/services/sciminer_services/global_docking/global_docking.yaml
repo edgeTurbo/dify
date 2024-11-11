@@ -1,5 +1,5 @@
 identity:
-  author: sciminer
+  author:
   name: global_docking
   frontend_url: /utility/docking?strategy=global
   version: 1.0.0
@@ -7,8 +7,8 @@ identity:
     en_US: Global Docking
     zh_Hans: 全局对接
   description:
-    en_US: this is global docking service description
-    zh_Hans: 这是全局对接服务描述
+    en_US: Dock the entire surface of the protein to explore all possible binding sites, which is suitable for finding new action areas when the specific binding site is not determined.
+    zh_Hans: 对蛋白质整个表面进行对接，探索所有可能的结合位点，适合在未确定具体结合位点的情况下寻找新作用区域
   icon: icon.svg
   tags:
     - other

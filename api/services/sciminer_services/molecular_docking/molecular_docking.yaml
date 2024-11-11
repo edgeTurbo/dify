@@ -1,5 +1,5 @@
 identity:
-  author: sciminer
+  author:
   name: molecular_docking
   frontend_url: /utility/docking?strategy=pocket
   version: 1.0.0
@@ -7,8 +7,8 @@ identity:
     en_US: Pocket Docking
     zh_Hans: 口袋对接
   description:
-    en_US: this is pocket docking service description
-    zh_Hans: 这是口袋对接服务描述
+    en_US: Limit molecular docking to known active pockets of proteins to improve computational accuracy and efficiency, suitable for drug screening of known binding sites
+    zh_Hans: 将分子对接限定在蛋白质的已知活性口袋中，以提高计算精度和效率，适合已知结合位点的药物筛选
   icon: icon.svg
   tags:
     - other
