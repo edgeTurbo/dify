@@ -214,6 +214,7 @@ class PoseViewService(SciminerBaseService):
                             created_by=user.id,
                             used=False,
                             hash=hashlib.sha3_256(image_content).hexdigest(),
+                            source=cls.service_type,
                         )
                         result_file_list.append(
                             {
