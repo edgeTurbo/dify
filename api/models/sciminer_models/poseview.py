@@ -45,3 +45,15 @@ class PoseViewTask(db.Model):
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
+
+    @property
+    def result_dict(self):
+        return {
+            "id": self.id,
+            "receptor_file_id": self.receptor_file_id,
+            "ligand_file_ids": self.ligand_file_ids,
+            "result": self.result,
+            "created_by": self.created_by,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }

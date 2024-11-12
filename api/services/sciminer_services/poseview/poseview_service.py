@@ -15,6 +15,7 @@ import requests
 from celery import shared_task
 
 from configs import dify_config
+from controllers.console.sciminer_apps.error import IllegalParametersError
 from controllers.console.sciminer_apps.poseview.request_fields import PoseviewTaskRequestFields
 from controllers.inner_api.websocket.websocket import calling_websocket_internal_send
 from core.tools.utils.result_file_utils import ResultFileUtils
@@ -99,7 +100,11 @@ class PoseViewService(SciminerBaseService):
 
     @classmethod
     def get_service_result_data(cls, task_id: str, user: Union[Account, EndUser]):
-        pass
+        data = PoseViewTask.query.filter_by(id=task_id, created_by=user.id).first()
+        if data is not None and isinstance(data, PoseViewTask):
+            return data.result_dict
+        else:
+            raise IllegalParametersError()
 
     @classmethod
     def main_processor(cls, user: Union[Account, EndUser], task_name: str, receptor_file_property: UploadFileProperty,
