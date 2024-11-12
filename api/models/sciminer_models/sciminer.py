@@ -51,7 +51,7 @@ class SciminerHistoryTask(db.Model):
                            onupdate=db.text("CURRENT_TIMESTAMP(0)"), comment="更新时间")
 
 
-class ResultFiles(db.Model):
+class ResultFile(db.Model):
     """sciminer的工具调用产生的结果文件"""
     __tablename__ = "result_files"
     __table_args__ = (

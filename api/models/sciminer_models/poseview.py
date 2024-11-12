@@ -30,6 +30,7 @@ class PoseViewTask(db.Model):
                            onupdate=db.text("CURRENT_TIMESTAMP(0)"), comment="更新时间")
 
     status = None
+    task_name = None
 
     @property
     def serialize(self):
@@ -38,6 +39,8 @@ class PoseViewTask(db.Model):
             "receptor_file_id": self.receptor_file_id,
             "ligand_file_ids": self.ligand_file_ids,
             "result": self.result,
+            "status": self.status,
+            "task_name": self.task_name,
             "created_by": self.created_by,
             "created_at": self.created_at,
             "updated_at": self.updated_at
