@@ -17,6 +17,9 @@ from services.sciminer_services.poseview.poseview_service import PoseViewService
 
 
 class PoseViewTaskApi(Resource):
+    """
+    PoseView任务提交接口
+    """
 
     @setup_required
     @login_required

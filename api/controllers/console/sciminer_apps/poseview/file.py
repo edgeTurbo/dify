@@ -49,4 +49,17 @@ class PoseViewFileApi(Resource):
         return upload_file, 201
 
 
+class PoseViewTaskResultFileApi(Resource):
+    """
+    PoseView任务结果文件查询接口（生成出来的svg图片）
+    """
+
+    def get(self):
+        file_id = request.args.get("file_id", default=None, type=str)
+        if file_id is None:
+            raise ValueError("maybe file_id is none")
+        return PoseViewFileService.read_result_file(file_id)
+
+
 api.add_resource(PoseViewFileApi, "/poseview/files/upload")
+api.add_resource(PoseViewTaskResultFileApi, "/poseview/files/read")

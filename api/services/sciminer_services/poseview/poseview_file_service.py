@@ -7,14 +7,19 @@ import hashlib
 import uuid
 from datetime import datetime
 from enum import Enum
+from io import BytesIO
 from typing import Union
 
+from flask import send_file
 from werkzeug.datastructures import FileStorage
 
 from configs import dify_config
+from controllers.console.sciminer_apps.error import IllegalParametersError
 from core.tools.utils.upload_file_utils import UploadFileUtils
+from extensions.ext_storage import storage
 from models.account import Account
 from models.model import EndUser, UploadFile
+from models.sciminer_models.sciminer import ResultFile
 
 
 class PoseViewSourceType(Enum):
@@ -85,3 +90,15 @@ class PoseViewFileService:
         file_extension = file_name.split(".")[-1]
         storage_file_name = f"{str(uuid.uuid4())}.{file_extension}"
         return f"upload_files/{current_tenant_id}/poseview/{date_path}/{storage_file_name}", current_tenant_id, file_extension.lower()
+
+    @classmethod
+    def read_result_file(cls, file_id):
+        """
+        读取结果文件(poseview接口调用返回的svg图片)
+        """
+        result_file = ResultFile.query.filter_by(id=file_id).first()
+        if result_file is None:
+            raise IllegalParametersError()
+        file_content = storage.load_once(result_file.key)
+        return send_file(BytesIO(file_content), as_attachment=True, download_name=result_file.name,
+                  mimetype='application/octet-stream')
