@@ -54,7 +54,8 @@ class PoseViewTaskResultFileApi(Resource):
     PoseView任务结果文件查询接口（生成出来的svg图片）
     """
 
-    def get(self):
+    def get(self, file_name: str):
+        # file_name参数不需要用到，只是为了前端能够直接使用img标签进行访问，因为src属性需要特定的文件名才能够进行缓存
         file_id = request.args.get("file_id", default=None, type=str)
         if file_id is None:
             raise ValueError("maybe file_id is none")
@@ -62,4 +63,4 @@ class PoseViewTaskResultFileApi(Resource):
 
 
 api.add_resource(PoseViewFileApi, "/poseview/files/upload")
-api.add_resource(PoseViewTaskResultFileApi, "/poseview/files/read")
+api.add_resource(PoseViewTaskResultFileApi, "/poseview/files/read/<file_name>")

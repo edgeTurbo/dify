@@ -100,5 +100,4 @@ class PoseViewFileService:
         if result_file is None:
             raise IllegalParametersError()
         file_content = storage.load_once(result_file.key)
-        return send_file(BytesIO(file_content), as_attachment=True, download_name=result_file.name,
-                  mimetype='application/octet-stream')
+        return send_file(BytesIO(file_content), mimetype=result_file.mime_type)

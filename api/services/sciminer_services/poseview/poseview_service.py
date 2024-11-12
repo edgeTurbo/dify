@@ -224,6 +224,7 @@ class PoseViewService(SciminerBaseService):
                         result_file_list.append(
                             {
                                 "file_id": result_file.id,
+                                "file_name": result_file.name,
                             }
                         )
                     else:
