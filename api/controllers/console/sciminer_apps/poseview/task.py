@@ -4,7 +4,7 @@
 @Description : poseview任务相关接口
 """
 
-from flask import request
+from flask import request, send_file
 from flask_login import login_required, current_user
 from flask_restful import Resource, marshal_with
 
@@ -34,4 +34,24 @@ class PoseViewTaskApi(Resource):
         return poseview_task, 201
 
 
+class PoseviewTaskResultDownloadApi(Resource):
+    """
+    poseview任务结果下载接口
+    """
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        task_id = request.args.get("task_id", default=None, type=str)
+        if task_id is None:
+            return {"message": "Task id not found"}, 500
+        zip_buffer = PoseViewService.download_task_result(task_id, current_user)
+        if zip_buffer is None:
+            return {"message": "Task not found"}, 500
+        else:
+            return send_file(zip_buffer, as_attachment=True, download_name=f"{task_id}.zip",
+                             mimetype='application/octet-stream')
+
+
 api.add_resource(PoseViewTaskApi, "/poseview/task")
+api.add_resource(PoseviewTaskResultDownloadApi, "/poseview/download")

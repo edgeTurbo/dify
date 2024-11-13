@@ -4,9 +4,11 @@
 @Description : poseview service
 """
 import hashlib
+import io
 import json
 import logging
 import os
+import zipfile
 from mimetypes import guess_type
 from typing import Union, Tuple
 
@@ -234,6 +236,34 @@ class PoseViewService(SciminerBaseService):
             logging.info(click.style(f"poseview任务调用失败：{e}", fg='red', bold=True))
             return "poseview任务调用失败", False
 
+    @classmethod
+    def download_task_result(cls, task_id: str, user: Union[Account, EndUser], zip_csv_file: bool = True):
+        poseview_task = PoseViewTask.query.filter_by(id=task_id, created_by=user.id).first()
+        if poseview_task is None:
+            return None
+        if poseview_task.result is None:
+            return None
+        sciminer_history_task = SciminerHistoryTask.query.filter_by(task_id=task_id, created_by=user.id).first()
+        if sciminer_history_task.status == Status.SUCCESS.status:
+            zip_buffer = io.BytesIO()
+            try:
+                result_list = json.loads(poseview_task.result)
+                with zipfile.ZipFile(zip_buffer, 'w') as _zip:
+                    if len(result_list) == 1:
+                        result_file_property = ResultFileUtils.get_result_file_bytes(result_file_ids=result_list[0]["file_id"], user=user)
+                        _zip.writestr(result_file_property.file_name, result_file_property.file_bytes)
+                    else:
+                        for _index, result_dict in enumerate(result_list, start=1):
+                            file_id = result_dict["file_id"]
+                            result_file_property = ResultFileUtils.get_result_file_bytes(result_file_ids=file_id, user=user)
+                            _zip.writestr(f"{_index}_{result_file_property.file_name}", result_file_property.file_bytes)
+                zip_buffer.seek(0)
+                return zip_buffer
+            except Exception as e:
+                zip_buffer.close()
+                return None
+        else:
+            return None
 
 # acks_late 设置为 True 时，任务的消息确认（acknowledgement）会在任务执行完成后才发送，确保任务在失败或 worker 崩溃时能重新被执行。
 # time_limit 设置为 120 秒，任务的执行时间不能超过 120 秒，超过这个时间，任务会被自动取消。

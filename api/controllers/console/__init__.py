@@ -68,4 +68,4 @@ from .sciminer_apps.global_docking import file, task
 from .sciminer_apps.poseview import file, task
 
 # Import sciminer controllers
-from .sciminer import history_task, tools
+from .sciminer import history_task, tools, utility_files
