@@ -54,6 +54,6 @@ class PoseViewTask(db.Model):
             "ligand_file_ids": self.ligand_file_ids,
             "result": self.result,
             "created_by": self.created_by,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S")
         }
