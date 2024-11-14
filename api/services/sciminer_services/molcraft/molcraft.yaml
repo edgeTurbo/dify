@@ -1,0 +1,14 @@
+identity:
+  author:
+  name: molcraft
+  frontend_url: /utility/molcraft
+  version: 1.0.0
+  label:
+    en_US: Mol Craft
+    zh_Hans: 这是molcraft应用
+  description:
+    en_US: this is molcraft service description
+    zh_Hans: 这是molcraft服务描述
+  icon: icon.svg
+  tags:
+    - other

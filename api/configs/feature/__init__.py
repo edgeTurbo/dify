@@ -598,31 +598,6 @@ class PositionConfig(BaseSettings):
         return {item.strip() for item in self.POSITION_TOOL_EXCLUDES.split(",") if item.strip() != ""}
 
 
-class MolecularDockingConfig(BaseSettings):
-    MOLECULAR_DOCKING_API_URL: str = Field(
-        description="Pocket docking API URL",
-        default=None,
-    )
-
-
-class GlobalDockingConfig(BaseSettings):
-    GLOBAL_DOCKING_API_URL: str = Field(
-        description="Global docking API URL",
-        default=None,
-    )
-
-
-class PoseViewConfig(BaseSettings):
-    POSEVIEW_TASK_API_URL: str = Field(
-        description="PoseView task API URL",
-        default=None,
-    )
-    POSEVIEW_RESULT_API_URL: str = Field(
-        description="PoseView result API URL",
-        default=None,
-    )
-
-
 class FeatureConfig(
     # place the configs in alphabet order
     AppExecutionConfig,
@@ -651,8 +626,5 @@ class FeatureConfig(
     # hosted services config
     HostedServiceConfig,
     CeleryBeatConfig,
-    MolecularDockingConfig,
-    GlobalDockingConfig,
-    PoseViewConfig,
 ):
     pass

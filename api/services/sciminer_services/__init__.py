@@ -168,13 +168,14 @@ def generate_service_dict() -> (dict[Any, Type[SciminerBaseService]], dict):
                             _service_classes[_cls.service_type] = _cls
 
                     service_yaml_file = path.join(path.dirname(module.__file__), f"{service_name}.yaml")
-                    _sciminer_util_manager = SciminerUtilManager(
-                        service_name=service_name,
-                        service_yaml_file=service_yaml_file,
-                    )
-                    _sciminer_util_manager_dict[_sciminer_util_manager.identity.name] = _sciminer_util_manager
+                    if path.exists(service_yaml_file):
+                        _sciminer_util_manager = SciminerUtilManager(
+                            service_name=service_name,
+                            service_yaml_file=service_yaml_file,
+                        )
+                        _sciminer_util_manager_dict[_sciminer_util_manager.identity.name] = _sciminer_util_manager
 
-                    _sciminer_util_provider_list.append(_sciminer_util_manager.get_user_provider())
+                        _sciminer_util_provider_list.append(_sciminer_util_manager.get_user_provider())
 
     # 排序工具列表
     return _service_classes, _sciminer_util_manager_dict, SciminerUtilManager.sort_utils(_sciminer_util_provider_list)
