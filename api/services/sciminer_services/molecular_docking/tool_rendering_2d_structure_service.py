@@ -39,7 +39,9 @@ class ToolRendering2DStructureService:
             suppl = Chem.SDMolSupplier(sdf_file)
         list_of_images = []
         for idx, mol in enumerate(suppl):
-            list_of_images.append(cls.process_molecule(mol, output_folder, idx + 1))
+            sdf_mol_svg = cls.process_molecule(mol, output_folder, idx + 1)
+            if sdf_mol_svg is not None:
+                list_of_images.append(sdf_mol_svg)
         return list_of_images
 
     # 处理PDB文件
