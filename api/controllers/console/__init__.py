@@ -67,5 +67,8 @@ from .sciminer_apps.global_docking import file, task
 # Import poseview controllers
 from .sciminer_apps.poseview import file, task
 
+# Import molcraft controllers
+from .sciminer_apps.molcraft import file
+
 # Import sciminer controllers
 from .sciminer import history_task, tools, utility_files

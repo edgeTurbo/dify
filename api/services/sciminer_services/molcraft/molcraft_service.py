@@ -9,6 +9,7 @@ from typing import Union
 import click
 
 from configs import dify_config
+from controllers.console.sciminer_apps.molcraft.request_fields import MolcraftTaskRequestFields
 from models.account import Account
 from models.model import EndUser
 from services.sciminer_services import SciminerBaseService
@@ -33,4 +34,8 @@ class MolcraftService(SciminerBaseService):
 
     @classmethod
     def get_service_result_data(self, task_id: str, user: Union[Account, EndUser]):
+        pass
+
+    @classmethod
+    def start_task(cls, molcraft_request_fields: MolcraftTaskRequestFields, user: Union[Account, EndUser], start_celery: bool = False):
         pass
