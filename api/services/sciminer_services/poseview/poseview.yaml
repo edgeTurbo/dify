@@ -1,5 +1,5 @@
 identity:
-  author: sciminer
+  author:
   name: poseview
   frontend_url: /utility/poseview
   version: 1.0.0

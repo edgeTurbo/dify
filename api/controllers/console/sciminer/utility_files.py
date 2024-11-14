@@ -24,7 +24,7 @@ class PreviewType(Enum):
 
 class PreviewFileSource(Enum):
     """
-    文件来源, 目前支持上传文件和结果文件
+    文件来源, 目前支持上传文件和结果文件，表示从哪张数据表中获取文件信息
     """
     UPLOAD_FILE = "upload"
     RESULT_FILE = "result"

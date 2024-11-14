@@ -30,6 +30,7 @@ from models.sciminer_models.poseview import PoseViewTask
 from models.sciminer_models.sciminer import Status, SciminerHistoryTask
 from services.sciminer_services import SciminerBaseService
 from services.sciminer_services.poseview.poseview_file_service import PoseViewFileService
+import xml.etree.ElementTree as ET
 
 if dify_config.POSEVIEW_TASK_API_URL == "" or dify_config.POSEVIEW_TASK_API_URL is None:
     logging.error(
@@ -199,6 +200,7 @@ class PoseViewService(SciminerBaseService):
                         result_image_url = result_json.get('image')
                         image_response = requests.get(result_image_url)
                         image_content = image_response.content
+                        image_content = cls.deal_svg_content(image_content)
                         file_size = len(image_content)
                         file_name = os.path.basename(result_image_url)
                         # 保存poseview结果图片到服务器
@@ -250,12 +252,14 @@ class PoseViewService(SciminerBaseService):
                 result_list = json.loads(poseview_task.result)
                 with zipfile.ZipFile(zip_buffer, 'w') as _zip:
                     if len(result_list) == 1:
-                        result_file_property = ResultFileUtils.get_result_file_bytes(result_file_ids=result_list[0]["file_id"], user=user)
+                        result_file_property = ResultFileUtils.get_result_file_bytes(
+                            result_file_ids=result_list[0]["file_id"], user=user)
                         _zip.writestr(result_file_property.file_name, result_file_property.file_bytes)
                     else:
                         for _index, result_dict in enumerate(result_list, start=1):
                             file_id = result_dict["file_id"]
-                            result_file_property = ResultFileUtils.get_result_file_bytes(result_file_ids=file_id, user=user)
+                            result_file_property = ResultFileUtils.get_result_file_bytes(result_file_ids=file_id,
+                                                                                         user=user)
                             _zip.writestr(f"{_index}_{result_file_property.file_name}", result_file_property.file_bytes)
                 zip_buffer.seek(0)
                 return zip_buffer
@@ -264,6 +268,35 @@ class PoseViewService(SciminerBaseService):
                 return None
         else:
             return None
+
+    @classmethod
+    def deal_svg_content(cls, svg_bytes: bytes):
+        """
+        处理svg内容，将其中的高度height改成400pt，然后将边框线改成透明
+        """
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        tree = ET.parse(io.BytesIO(svg_bytes))
+        root = tree.getroot()
+        root.set('height', '400pt')
+
+        last_path = None
+        for elem in root.iter():
+            if elem.tag.endswith('path'):
+                last_path = elem
+
+        if last_path is not None:
+            style = last_path.get('style', '')
+            # 将 style 属性转换为字典
+            style_dict = dict(item.split(":") for item in style.split(";") if item)
+            # 修改 stroke-opacity 属性
+            style_dict['stroke-opacity'] = '0'  # 将 stroke-opacity 设置为新的值
+            # 将字典重新拼接为 style 字符串
+            new_style = ";".join(f"{k}:{v}" for k, v in style_dict.items())
+            last_path.set('style', new_style)
+
+        new_svg_content = ET.tostring(root, encoding='unicode')
+        return new_svg_content.encode("utf-8")
+
 
 # acks_late 设置为 True 时，任务的消息确认（acknowledgement）会在任务执行完成后才发送，确保任务在失败或 worker 崩溃时能重新被执行。
 # time_limit 设置为 120 秒，任务的执行时间不能超过 120 秒，超过这个时间，任务会被自动取消。
