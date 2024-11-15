@@ -11,4 +11,4 @@ identity:
     zh_Hans: 这是2D相互作用图服务描述
   icon: icon.svg
   tags:
-    - other
+    - interaction_analysis
