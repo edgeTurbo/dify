@@ -57,6 +57,11 @@ class PoseViewService(SciminerBaseService):
     service_type = "POSEVIEW"
     task_label = "PoseView"
 
+    proxies = {
+        'http': 'http://127.0.0.1:7890',
+        'https': 'http://127.0.0.1:7890',
+    }
+
     @classmethod
     def start_task(cls, poseview_request_fields: PoseviewTaskRequestFields, user: Union[Account, EndUser],
                    start_celery: bool = False) -> PoseViewTask:
@@ -186,7 +191,7 @@ class PoseViewService(SciminerBaseService):
                                           'application/octet-stream')),
                         ('ligand_file', (ligand_file_property.file_name, sdf_bytes, 'application/octet-stream'))
                     ]
-                    task_response = requests.post(dify_config.POSEVIEW_TASK_API_URL, files=files)
+                    task_response = requests.post(dify_config.POSEVIEW_TASK_API_URL, files=files, proxies=cls.proxies)
                     task_json = task_response.json()
                     job_id = task_json.get('job_id')
                     logging.info(click.style(f"job_id={job_id}", fg='green'))
@@ -194,13 +199,13 @@ class PoseViewService(SciminerBaseService):
                         return "job_id为空，poseview任务失败", False
                     for i in range(60):
                         # 查询poseview任务结果
-                        result_response = requests.get(dify_config.POSEVIEW_RESULT_API_URL.format(job_id))
+                        result_response = requests.get(dify_config.POSEVIEW_RESULT_API_URL.format(job_id), proxies=cls.proxies)
                         result_json = result_response.json()
                         logging.info(click.style(f"poseview api返回的结果：{result_json}", fg='green'))
                         result_status = result_json.get('status')
                         if result_status == 'success':
                             result_image_url = result_json.get('image')
-                            image_response = requests.get(result_image_url)
+                            image_response = requests.get(result_image_url, proxies=cls.proxies)
                             image_content = image_response.content
                             image_content = cls.deal_svg_content(image_content)
                             file_size = len(image_content)
