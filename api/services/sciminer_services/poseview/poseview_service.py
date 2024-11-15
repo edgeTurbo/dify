@@ -186,63 +186,72 @@ class PoseViewService(SciminerBaseService):
 
                 # 调用poseview的API进行任务处理
                 for sdf_bytes in sdf_bytes_list:
-                    files = [
-                        ('protein_file', (receptor_file_property.file_name, receptor_file_property.file_bytes,
-                                          'application/octet-stream')),
-                        ('ligand_file', (ligand_file_property.file_name, sdf_bytes, 'application/octet-stream'))
-                    ]
-                    task_response = requests.post(dify_config.POSEVIEW_TASK_API_URL, files=files, proxies=cls.proxies)
-                    task_json = task_response.json()
-                    job_id = task_json.get('job_id')
-                    logging.info(click.style(f"job_id={job_id}", fg='green'))
-                    if job_id is None:
-                        return "job_id为空，poseview任务失败", False
-                    for i in range(60):
-                        # 查询poseview任务结果
-                        result_response = requests.get(dify_config.POSEVIEW_RESULT_API_URL.format(job_id), proxies=cls.proxies)
-                        result_json = result_response.json()
-                        logging.info(click.style(f"poseview api返回的结果：{result_json}", fg='green'))
-                        result_status = result_json.get('status')
-                        if result_status == 'success':
-                            result_image_url = result_json.get('image')
-                            image_response = requests.get(result_image_url, proxies=cls.proxies)
-                            image_content = image_response.content
-                            image_content = cls.deal_svg_content(image_content)
-                            file_size = len(image_content)
-                            file_name = os.path.basename(result_image_url)
-                            # 保存poseview结果图片到服务器
-                            file_key, current_tenant_id, lower_file_extension = PoseViewFileService.get_poseview_file_key(
-                                file_name=file_name, user=user)
-                            ResultFileUtils.result_file_to_storage(
-                                file_key=file_key,
-                                file_content=image_content,
-                                extension=lower_file_extension,
-                            )
-                            result_file = ResultFileUtils.add_result_file_to_db(
-                                tenant_id=current_tenant_id,
-                                storage_type=dify_config.STORAGE_TYPE,
-                                key=file_key,
-                                name=file_name,
-                                size=file_size,
-                                extension=lower_file_extension,
-                                mime_type=guess_type(file_name)[0] or "octet/stream",
-                                created_by_role=("account" if isinstance(user, Account) else "end_user"),
-                                created_by=user.id,
-                                used=False,
-                                hash=hashlib.sha3_256(image_content).hexdigest(),
-                                source=cls.service_type,
-                            )
-                            result_file_list.append(
-                                {
-                                    "file_id": result_file.id,
-                                    "file_name": result_file.name,
-                                }
-                            )
-                            break
-                        elif result_status == 'running':
-                            time.sleep(3)
-                        else:
-                            return "不是成功状态，poseview任务失败", False
+                    try:
+                        files = [
+                            ('protein_file', (receptor_file_property.file_name, receptor_file_property.file_bytes,
+                                              'application/octet-stream')),
+                            ('ligand_file', (ligand_file_property.file_name, sdf_bytes, 'application/octet-stream'))
+                        ]
+                        task_response = requests.post(dify_config.POSEVIEW_TASK_API_URL, files=files, proxies=cls.proxies)
+                        task_json = task_response.json()
+                        job_id = task_json.get('job_id')
+                        logging.info(click.style(f"job_id={job_id}", fg='green'))
+                        if job_id is None:
+                            return "job_id为空，poseview任务失败", False
+                        for i in range(60):
+                            # 查询poseview任务结果
+                            result_response = requests.get(dify_config.POSEVIEW_RESULT_API_URL.format(job_id), proxies=cls.proxies)
+                            result_json = result_response.json()
+                            logging.info(click.style(f"poseview api返回的结果：{result_json}", fg='green'))
+                            result_status = result_json.get('status')
+                            if result_status == 'success':
+                                result_image_url = result_json.get('image')
+                                image_response = requests.get(result_image_url, proxies=cls.proxies)
+                                image_content = image_response.content
+                                image_content = cls.deal_svg_content(image_content)
+                                file_size = len(image_content)
+                                file_name = os.path.basename(result_image_url)
+                                # 保存poseview结果图片到服务器
+                                file_key, current_tenant_id, lower_file_extension = PoseViewFileService.get_poseview_file_key(
+                                    file_name=file_name, user=user)
+                                ResultFileUtils.result_file_to_storage(
+                                    file_key=file_key,
+                                    file_content=image_content,
+                                    extension=lower_file_extension,
+                                )
+                                result_file = ResultFileUtils.add_result_file_to_db(
+                                    tenant_id=current_tenant_id,
+                                    storage_type=dify_config.STORAGE_TYPE,
+                                    key=file_key,
+                                    name=file_name,
+                                    size=file_size,
+                                    extension=lower_file_extension,
+                                    mime_type=guess_type(file_name)[0] or "octet/stream",
+                                    created_by_role=("account" if isinstance(user, Account) else "end_user"),
+                                    created_by=user.id,
+                                    used=False,
+                                    hash=hashlib.sha3_256(image_content).hexdigest(),
+                                    source=cls.service_type,
+                                )
+                                result_file_list.append(
+                                    {
+                                        "file_id": result_file.id,
+                                        "file_name": result_file.name,
+                                    }
+                                )
+                                break
+                            elif result_status == 'running':
+                                time.sleep(3)
+                    except Exception as e:
+                        # 出现异常时，跳过该小分子，继续下一个小分子, 结果文件全部置为null
+                        logging.info(click.style(f"poseview任务调用失败：{e}", fg='red', bold=True))
+                        result_file_list.append(
+                            {
+                                "file_id": None,
+                                "file_name": None,
+                            }
+                        )
+
             if len(result_file_list) == 0:
                 return "poseview任务没有成功生成结果文件", False
             return result_file_list, True
