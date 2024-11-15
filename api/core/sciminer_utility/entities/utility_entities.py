@@ -8,6 +8,7 @@ from core.tools.entities.common_entities import I18nObject
 
 class UtilityLabelEnum(Enum):
     MOLECULAR_DOCKING = "molecular_docking"
+    INTERACTION_ANALYSIS = "interaction_analysis"
     OTHER = "other"
 
 
