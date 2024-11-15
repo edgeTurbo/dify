@@ -7,8 +7,8 @@ identity:
     en_US: Pose View
     zh_Hans: 2D相互作用图
   description:
-    en_US: this is pose view service description
-    zh_Hans: 这是2D相互作用图服务描述
+    en_US: Visualize the key interaction types between molecules and targets (such as hydrogen bonds, hydrophobic interactions, etc.) to facilitate rapid analysis and optimization of molecular design
+    zh_Hans: 通过可视化方式展示分子与靶点之间的关键相互作用类型（如氢键、疏水作用等），便于快速分析和优化分子设计
   icon: icon.svg
   tags:
     - interaction_analysis

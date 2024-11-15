@@ -7,8 +7,8 @@ identity:
     en_US: Mol Craft
     zh_Hans: 分子生成
   description:
-    en_US: this is molcraft service description
-    zh_Hans: 这是分子生成服务描述
+    en_US: Based on the input structure, potential molecular structures are intelligently generated to quickly explore the molecular design space, which is suitable for drug screening and molecular optimization
+    zh_Hans: 根据输入结构，智能生成潜在分子结构，快速探索分子设计空间，适用于药物筛选和分子优化
   icon: icon.svg
   tags:
     - molecular_design_and_generation

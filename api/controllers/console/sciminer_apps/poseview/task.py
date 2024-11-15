@@ -29,7 +29,7 @@ class PoseViewTaskApi(Resource):
         data = request.get_json()
         poseview_request_fields = PoseviewTaskRequestFields(**data)
 
-        poseview_task = PoseViewService.start_task(poseview_request_fields, user=current_user, start_celery=False)
+        poseview_task = PoseViewService.start_task(poseview_request_fields, user=current_user, start_celery=True)
 
         return poseview_task, 201
 
