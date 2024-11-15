@@ -11,4 +11,4 @@ identity:
     zh_Hans: 这是分子生成服务描述
   icon: icon.svg
   tags:
-    - other
+    - molecular_design_and_generation
