@@ -71,12 +71,16 @@ class GlobalDockingTaskResultCallbackApi(Resource):
                 {'status': Status.SUCCESS.status}
             )
             db.session.commit()
-            # 发送websocket消息
             # 发送websocket消息通知前端任务状态变化
             websocket_handler.send_message_to_user(
                 uid=user_id,
                 message={
-                    "global_docking": json.loads(message)
+                    "global_docking": {
+                        "id": task_id,
+                        "task_name": global_docking_task.task_name,
+                        "result": json.loads(message),
+                        "status": Status.SUCCESS.status,
+                    }
                 },
             )
 
