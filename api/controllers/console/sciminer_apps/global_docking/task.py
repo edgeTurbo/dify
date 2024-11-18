@@ -78,7 +78,7 @@ class GlobalDockingTaskResultCallbackApi(Resource):
                     "global_docking": {
                         "id": task_id,
                         "task_name": global_docking_task.task_name,
-                        "result": json.loads(message),
+                        "result": message,
                         "status": Status.SUCCESS.status,
                     }
                 },
