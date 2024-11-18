@@ -19,6 +19,11 @@ class GlobalDockingAPIConfig(BaseSettings):
         description="Global docking API URL",
         default=None,
     )
+    GLOBAL_DOCKING_CALLBACK_API_URL: str = Field(
+        description="Global docking callback API URL,这是用来提供给全局对接模型的回调接口，用来更新任务状态和结果",
+        default=None,
+    )
+
 
 
 class PoseViewAPIConfig(BaseSettings):

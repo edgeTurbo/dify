@@ -1,17 +1,22 @@
+import json
 import uuid
 
 from flask import request, send_file
 from flask_login import current_user
 from flask_restful import Resource, marshal_with
 
+from configs.websocket_config import websocket_handler
 from controllers.console import api
 from controllers.console.sciminer_apps.error import (
     IllegalParametersError,
 )
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required
+from extensions.ext_database import db
 from fields.global_docking_fields import global_docking_task_fields
 from libs.login import login_required
+from models.sciminer_models.global_docking import GlobalDockingTask
+from models.sciminer_models.sciminer import Status, SciminerHistoryTask
 from services.sciminer_services.global_docking.global_docking_service import GlobalDockingService
 
 
@@ -44,10 +49,43 @@ class GlobalDockingTaskApi(Resource):
         return global_docking_task, 201
 
 
+class GlobalDockingTaskResultCallbackApi(Resource):
+    """
+    分子对接任务结果回调接口(供模型返回结果时调用)
+    """
+
+    def post(self):
+        data = request.get_json()
+        message = data.get("message", None)
+        user_id = data.get("user_id", None)
+        task_id = data.get("task_id", None)
+        global_docking_task = GlobalDockingTask.query.filter_by(id=task_id, created_by=user_id).first()
+        if global_docking_task.status != Status.FAILURE.status:
+            # 只有当任务状态不是失败状态时才更新任务结果
+            global_docking_task.result = message
+            global_docking_task.status = Status.SUCCESS.status
+            db.session.commit()
+
+            # 在sciminer_history_task数据表中更新任务状态
+            SciminerHistoryTask.query.filter_by(task_id=task_id, created_by=user_id).update(
+                {'status': Status.SUCCESS.status}
+            )
+            db.session.commit()
+            # 发送websocket消息
+            # 发送websocket消息通知前端任务状态变化
+            websocket_handler.send_message_to_user(
+                uid=user_id,
+                message={
+                    "global_docking": json.loads(message)
+                },
+            )
+
+
 class GlobalDockingTaskResultDownloadApi(Resource):
     """
     分子对接任务结果下载接口
     """
+
     @setup_required
     @login_required
     @account_initialization_required
@@ -64,3 +102,5 @@ class GlobalDockingTaskResultDownloadApi(Resource):
 
 api.add_resource(GlobalDockingTaskApi, "/global-docking/task")
 api.add_resource(GlobalDockingTaskResultDownloadApi, "/global-docking/download")
+
+api.add_resource(GlobalDockingTaskResultCallbackApi, "/global-docking/task/callback")

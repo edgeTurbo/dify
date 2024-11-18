@@ -35,6 +35,12 @@ if dify_config.GLOBAL_DOCKING_API_URL == "" or dify_config.GLOBAL_DOCKING_API_UR
             "全局对接API URL不能为空, 请在配置文件.env中设置MOLECULAR_DOCKING_API_URL, 否则分子对接功能无法正常使用",
             fg='red', bold=True))
 
+if dify_config.GLOBAL_DOCKING_CALLBACK_API_URL == "" or dify_config.GLOBAL_DOCKING_CALLBACK_API_URL is None:
+    logging.error(
+        click.style(
+            "全局对接回调API URL不能为空, 请在配置文件.env中设置GLOBAL_DOCKING_CALLBACK_API_URL, 否则全局对接功能无法正常使用",
+            fg='red', bold=True))
+
 if dify_config.INNER_API is None or dify_config.INNER_API_KEY is None:
     logging.error(
         click.style(
@@ -72,6 +78,7 @@ class GlobalDockingService(SciminerBaseService):
             out_pose_num=out_pose_num,
             created_by=user.id,
             status=status,
+            task_name=task_name,
         )
         db.session.add(global_docking_task)
         db.session.commit()
@@ -105,14 +112,12 @@ class GlobalDockingService(SciminerBaseService):
                        ligand_file_buffer_list: list[BufferedReader], out_pose_num: int,
                        global_docking_task: GlobalDockingTask, start_celery: bool = True) -> GlobalDockingTask:
         # 调用DockingProcessorAPI进行docking
+        success_flag = True
+        status = Status.FAILURE.status
         try:
             logging.info(click.style(f"{user.name} 开始全局分子对接任务：{task_name}", fg='green'))
-            result, success_flag = cls.docking_processor(fasta_file_buffer, ligand_file_buffer_list, out_pose_num)
-            if success_flag:
-                logging.info(click.style(f"全局分子对接成功", fg='green'))
-                status = Status.SUCCESS.status
-                result = json.dumps(result)
-            else:
+            result, success_flag = cls.docking_processor(fasta_file_buffer, ligand_file_buffer_list, out_pose_num, global_docking_task.id, user.id)
+            if not success_flag:
                 logging.info(click.style(f"全局分子对接失败", fg='red', bold=True))
                 status = Status.FAILURE.status
         except Exception as e:
@@ -127,39 +132,43 @@ class GlobalDockingService(SciminerBaseService):
             for ligand_file_buffer in ligand_file_buffer_list:
                 ligand_file_buffer.close()
 
-        # 更新global_docking_task数据表中的结果信息
-        global_docking_task = GlobalDockingTask.query.filter_by(id=global_docking_task.id,
-                                                                created_by=user.id).first()
-        global_docking_task.result = result
-        global_docking_task.status = status
-        global_docking_task.task_name = task_name
-        db.session.commit()
+        # 现在只更新出现错误的情况，成功的情况需要等模型调用回调接口更新状态
+        if not success_flag:
+            # 更新global_docking_task数据表中的结果信息
+            global_docking_task = GlobalDockingTask.query.filter_by(id=global_docking_task.id,
+                                                                    created_by=user.id).first()
+            global_docking_task.result = result
+            global_docking_task.status = status
+            global_docking_task.task_name = task_name
+            db.session.commit()
 
-        # 在sciminer_history_task数据表中更新任务状态
-        SciminerHistoryTask.query.filter_by(task_id=global_docking_task.id, created_by=user.id).update(
-            {'status': status}
-        )
-        db.session.commit()
+            # 在sciminer_history_task数据表中更新任务状态
+            SciminerHistoryTask.query.filter_by(task_id=global_docking_task.id, created_by=user.id).update(
+                {'status': status}
+            )
+            db.session.commit()
 
-        if start_celery:
-            # 当启动消息队列的时候才进行发送websocket消息
-            calling_websocket_internal_send(channel='global_docking', user_id=user.id, message={
-                "id": global_docking_task.id,
-                "task_name": task_name,
-                "result": result,
-                "status": status,
-            })
+            if start_celery:
+                # 当启动消息队列的时候才进行发送websocket消息
+                calling_websocket_internal_send(channel='global_docking', user_id=user.id, message={
+                    "id": global_docking_task.id,
+                    "task_name": task_name,
+                    "result": result,
+                    "status": status,
+                })
 
         return global_docking_task
 
     @classmethod
-    def docking_processor(cls, fasta_file_buffer, ligand_file_buffer_list, out_pose_num) -> Tuple[
+    def docking_processor(cls, fasta_file_buffer, ligand_file_buffer_list, out_pose_num, task_id: str, user_id: str) -> Tuple[
         Union[list, str], bool]:
         """
         Docking processor.
         :param fasta_file_buffer: fasta file buffer
         :param ligand_file_buffer_list: ligand file buffer list
         :param out_pose_num: output pose number
+        :param task_id: task id
+        :param user_id: user id
         :return: result data and success or not
         """
 
@@ -208,16 +217,18 @@ class GlobalDockingService(SciminerBaseService):
             "protein_content": protein_content,
             "smiles_list": smiles_list,
             # "num_modes": out_pose_num,
+            "callback_url": dify_config.GLOBAL_DOCKING_CALLBACK_API_URL,
+            "task_id": task_id,
+            "user_id": user_id,
         }
 
         try:
-            response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params, timeout=360*len(smiles_list))
-            result_data = response.json()
+            response = requests.post(dify_config.GLOBAL_DOCKING_API_URL, json=docking_params)
 
-            if 'error' in result_data:
-                return result_data['error'], False
+            if response.status_code != 200:
+                return f"请求失败：{response.status_code}", False
 
-            return result_data['message'], True
+            return f"请求成功", True
         except Exception as e:
             error_message = str(e)
             logging.error(
@@ -247,8 +258,8 @@ class GlobalDockingService(SciminerBaseService):
             zip_buffer = io.BytesIO()
             if _range == 'all':
                 with zipfile.ZipFile(zip_buffer, 'w') as _zip:
-                # 下载全部结果
-                # 解析json数据，将mol提取出来，写入到zip文件
+                    # 下载全部结果
+                    # 解析json数据，将mol提取出来，写入到zip文件
                     result_list = json.loads(global_docking_task.result)
                     for result in result_list:
                         file_name = f"complex{result['mode']}.cif"
@@ -313,7 +324,6 @@ class GlobalDockingService(SciminerBaseService):
                 raise ValueError("生成csv文件失败")
             finally:
                 csv_io.close()
-
 
     # # todo 这是临时性的方法，后面可能还需要再深究
     # @classmethod
@@ -399,7 +409,8 @@ def global_docking_celery_task(self, user_dict: dict, out_pose_num: int,
     global_docking_task = GlobalDockingTask(**global_docking_task_dict)
     user = Account(**user_dict)
     # 在sciminer_history_task数据表中更新任务状态为处理中
-    sciminer_history_task = SciminerHistoryTask.query.filter_by(task_id=global_docking_task.id, created_by=user.id).first()
+    sciminer_history_task = SciminerHistoryTask.query.filter_by(task_id=global_docking_task.id,
+                                                                created_by=user.id).first()
     if sciminer_history_task is not None and isinstance(sciminer_history_task, SciminerHistoryTask):
         sciminer_history_task.status = Status.PROCESSING.status
         db.session.commit()
